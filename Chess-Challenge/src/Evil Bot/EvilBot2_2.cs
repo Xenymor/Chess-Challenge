@@ -2,81 +2,94 @@
 using System;
 using System.Collections.Generic;
 
-namespace ChessChallenge.Example
+namespace ChessChallenge.EvilBot2_2
 {
     internal class EvilBot : IChessBot
     {
-        Board board;
-        int depth = 5;
+        private Board board;
+        private int width = 5;
+        private int depth = 5;
+        private int decrease = 0;
 
         public Move Think(Board board, Timer timer)
         {
+            if (timer.MillisecondsRemaining <= 15_000 && decrease == 0)
+            {
+                depth -= 1;
+                decrease = 1;
+            }
+            else if (timer.MillisecondsRemaining <= 8_000 && decrease <= 1)
+            {
+                depth -= 1;
+                decrease += 1;
+            }
+            else if (timer.MillisecondsRemaining <= 4_000 && decrease <= 2)
+            {
+                depth -= 1;
+                decrease += 1;
+            }
+
             this.board = board;
-            MoveDouble bestMove = alphaBeta(double.MinValue, double.MaxValue, depth);
-            Console.WriteLine("EvilBot: " + bestMove.GetEval());
+            Move[] moves = board.GetLegalMoves();
+            Array.Sort(moves, new MyMoveComparer(board));
+            MoveDouble bestMove = new MoveDouble(new Move(), double.MinValue);
+            bool iAmWhite = board.IsWhiteToMove;
+            for (int i = 0; i < moves.Length; i++)
+            {
+                board.MakeMove(moves[i]);
+                MoveDouble result = FindBestMove(width, depth, iAmWhite, moves[i]);
+                if (result.GetEval() >= bestMove.GetEval())
+                {
+                    bestMove = result;
+                }
+                board.UndoMove(moves[i]);
+            }
             return bestMove.GetMove();
         }
 
-        private MoveDouble alphaBeta(double alpha, double beta, int depth)
+        private MoveDouble FindBestMove(int width, int depth, bool iAmWhite, Move lastMove)
         {
-            Move[] moves = board.GetLegalMoves();
-            if (depth <= 0 || moves.Length == 0 || board.IsDraw() || board.IsInCheckmate())
+            if (depth <= 0 || board.IsInCheckmate() || board.IsDraw())
             {
-                return new MoveDouble(new Move(), EvaluatePosition());
+                return new MoveDouble(lastMove, EvaluatePosition(iAmWhite));
+            }
+
+            Move[] moves = board.GetLegalMoves();
+            if (moves.Length == 0)
+            {
+                return new MoveDouble(lastMove, EvaluatePosition(iAmWhite));
             }
             Array.Sort(moves, new MyMoveComparer(board));
-            MoveDouble bestMove = new MoveDouble(new Move(), !board.IsWhiteToMove ? double.MaxValue : double.MinValue);
-            foreach (Move move in moves)
+            MoveDouble bestMove = new MoveDouble(new Move(), (board.IsWhiteToMove == iAmWhite) ? double.MinValue : double.MaxValue);
+            for (int i = 0; i < ((moves.Length < width) ? moves.Length : width); i++)
             {
-                board.MakeMove(move);
-                MoveDouble score = alphaBeta(alpha, beta, depth - 1);
-                board.UndoMove(move);
-                if (board.IsWhiteToMove)
+                board.MakeMove(moves[i]);
+                MoveDouble result = new MoveDouble(lastMove, FindBestMove(width, depth - 1, iAmWhite, moves[i]).GetEval());
+                board.UndoMove(moves[i]);
+                if (iAmWhite == board.IsWhiteToMove)
                 {
-                    if (score.GetEval() >= beta)
+                    if (result.GetEval() >= bestMove.GetEval())
                     {
-                        return new MoveDouble(move, score.GetEval());
+                        bestMove = result;
                     }
-                    if (score.GetEval() > alpha)
-                    {
-                        alpha = score.GetEval();
-                        bestMove = new MoveDouble(move, alpha);
-                        if (alpha == 1000)
-                        {
-                            return bestMove;
-                        }
-                    }
-
                 }
-                else
+                else if (result.GetEval() < bestMove.GetEval())
                 {
-                    if (score.GetEval() <= alpha)
-                    {
-                        return new MoveDouble(move, score.GetEval());
-                    }
-                    if (score.GetEval() < beta)
-                    {
-                        beta = score.GetEval();
-                        bestMove = new MoveDouble(move, beta);
-                        if (beta == -1000)
-                        {
-                            return bestMove;
-                        }
-                    }
+                    bestMove = result;
                 }
             }
-            /*if (bestMove.GetMove().Equals(new Move())) {
-                Console.WriteLine("alpha: " + alpha + "; beta: " + beta + "; PlayerToMove: " + board.IsWhiteToMove + "; Depth remaining: " + depth);
-                Environment.Exit(-1);
-            }*/
+            if (bestMove.GetMove().Equals(new Move()))
+            {
+                Console.WriteLine(bestMove.GetMove() + " " + bestMove.GetEval());
+            }
             return bestMove;
         }
 
-        private double EvaluatePosition()
+        private double EvaluatePosition(bool amIWhite)
         {
             if (board.IsInCheckmate())
             {
-                return !board.IsWhiteToMove ? 1000 : -1000;
+                return board.IsWhiteToMove ^ amIWhite ? 1000 : -1000;
             }
             else if (board.IsDraw())
             {
@@ -95,7 +108,7 @@ namespace ChessChallenge.Example
                 + pls[9].Count * 5
                 + pls[10].Count * 9;
 
-            double eval = (white - black);
+            double eval = (white - black) * (amIWhite ? 1 : -1) * (board.GetLegalMoves().Length / 10);
             return eval;
         }
     }
@@ -114,6 +127,11 @@ namespace ChessChallenge.Example
         public Move GetMove() { return move; }
 
         public double GetEval() { return eval; }
+
+        internal void SetEval(double v)
+        {
+            eval = v;
+        }
     }
 
     class MyMoveComparer : IComparer<Move>
@@ -169,10 +187,22 @@ namespace ChessChallenge.Example
             }
         }
 
+        private bool canCapture(Square targetSquare)
+        {
+            foreach (Move m in board.GetLegalMoves(true))
+            {
+                if (m.TargetSquare.Equals(targetSquare))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private bool isCheck(Move x)
         {
             board.MakeMove(x);
-            bool isCheck = board.IsInCheck();
+            Boolean isCheck = board.IsInCheck();
             board.UndoMove(x);
             return isCheck;
         }
@@ -195,13 +225,5 @@ namespace ChessChallenge.Example
             return old;
         }
 
-        private int sort(int old, int a, int b)
-        {
-            if (old == 0)
-            {
-                return a.CompareTo(b);
-            }
-            return old;
-        }
     }
 }
