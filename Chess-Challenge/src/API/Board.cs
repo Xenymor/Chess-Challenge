@@ -1,56 +1,55 @@
 namespace ChessChallenge.API
 {
-	using ChessChallenge.Application.APIHelpers;
-	using ChessChallenge.Chess;
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Text;
+    using ChessChallenge.Application.APIHelpers;
+    using ChessChallenge.Chess;
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
 
-	public sealed class Board
-	{
-		readonly Chess.Board board;
-		readonly APIMoveGen moveGen;
-		readonly RepetitionTable repetitionTable;
+    public sealed class Board
+    {
+        readonly Chess.Board board;
+        readonly APIMoveGen moveGen;
+        readonly RepetitionTable repetitionTable;
 
-		readonly PieceList[] allPieceLists;
-		readonly PieceList[] validPieceLists;
+        readonly PieceList[] allPieceLists;
+        readonly PieceList[] validPieceLists;
 
         readonly Move[] movesDest;
-		Move[] cachedLegalMoves;
-		bool hasCachedMoves;
-		Move[] cachedLegalCaptureMoves;
-		bool hasCachedCaptureMoves;
-		bool hasCachedMoveCount;
-		int cachedMoveCount;
-		int depth;
+        Move[] cachedLegalMoves;
+        bool hasCachedMoves;
+        Move[] cachedLegalCaptureMoves;
+        bool hasCachedCaptureMoves;
+        bool hasCachedMoveCount;
+        int cachedMoveCount;
+        int depth;
 
         /// <summary>
         /// Create a new board. Note: this should not be used in the challenge,
         /// use the board provided in the Think method instead.
         /// </summary>
         public Board(Chess.Board boardSource)
-		{
-			// Clone board and create game move history
-			board = new Chess.Board();
-			board.LoadPosition(boardSource.StartPositionInfo);
-			GameMoveHistory = new Move[boardSource.AllGameMoves.Count];
-			repetitionTable = new();
+        {
+            // Clone board and create game move history
+            board = new Chess.Board();
+            board.LoadPosition(boardSource.StartPositionInfo);
+            GameMoveHistory = new Move[boardSource.AllGameMoves.Count];
+            repetitionTable = new();
 
-			for (int i = 0; i < boardSource.AllGameMoves.Count; i ++)
-			{
-				Chess.Move move = boardSource.AllGameMoves[i];
-				int movePieceType = PieceHelper.PieceType(board.Square[move.StartSquareIndex]);
-				int capturePieceType = move.IsEnPassant ? PieceHelper.Pawn : PieceHelper.PieceType(board.Square[move.TargetSquareIndex]);
-				GameMoveHistory[i] = new Move(move, movePieceType, capturePieceType);
-				board.MakeMove(move, false);
-			}
+            for (int i = 0; i < boardSource.AllGameMoves.Count; i++)
+            {
+                Chess.Move move = boardSource.AllGameMoves[i];
+                int movePieceType = PieceHelper.PieceType(board.Square[move.StartSquareIndex]);
+                int capturePieceType = move.IsEnPassant ? PieceHelper.Pawn : PieceHelper.PieceType(board.Square[move.TargetSquareIndex]);
+                GameMoveHistory[i] = new Move(move, movePieceType, capturePieceType);
+                board.MakeMove(move, false);
+            }
 
-			// Init move gen
-			moveGen = new APIMoveGen();
-			cachedLegalMoves = Array.Empty<Move>();
-			cachedLegalCaptureMoves = Array.Empty<Move>();
-			movesDest = new Move[APIMoveGen.MaxMoves];
+            // Init move gen
+            moveGen = new APIMoveGen();
+            cachedLegalMoves = Array.Empty<Move>();
+            cachedLegalCaptureMoves = Array.Empty<Move>();
+            movesDest = new Move[APIMoveGen.MaxMoves];
 
             // Init piece lists
             List<PieceList> validPieceLists = new();
@@ -65,57 +64,57 @@ namespace ChessChallenge.API
             }
             this.validPieceLists = validPieceLists.ToArray();
 
-			// Init rep history
-			GameRepetitionHistory = board.RepetitionPositionHistory.ToArray();
-			repetitionTable.Init(board);
+            // Init rep history
+            GameRepetitionHistory = board.RepetitionPositionHistory.ToArray();
+            repetitionTable.Init(board);
         }
 
-		/// <summary>
-		/// Updates the board state with the given move.
-		/// The move is assumed to be legal, and may result in errors if it is not.
-		/// Can be undone with the UndoMove method.
-		/// </summary>
-		public void MakeMove(Move move)
-		{
-			if (!move.IsNull)
-			{
-				OnPositionChanged();
-				board.MakeMove(new Chess.Move(move.RawValue), inSearch: true);
-				repetitionTable.Push(ZobristKey, move.IsCapture || move.MovePieceType == PieceType.Pawn);
+        /// <summary>
+        /// Updates the board state with the given move.
+        /// The move is assumed to be legal, and may result in errors if it is not.
+        /// Can be undone with the UndoMove method.
+        /// </summary>
+        public void MakeMove(Move move)
+        {
+            if (!move.IsNull)
+            {
+                OnPositionChanged();
+                board.MakeMove(new Chess.Move(move.RawValue), inSearch: true);
+                repetitionTable.Push(ZobristKey, move.IsCapture || move.MovePieceType == PieceType.Pawn);
                 depth++;
 
             }
-		}
+        }
 
-		/// <summary>
-		/// Undo a move that was made with the MakeMove method
-		/// </summary>
-		public void UndoMove(Move move)
-		{
-			if (!move.IsNull)
-			{
-				repetitionTable.TryPop();
-				board.UndoMove(new Chess.Move(move.RawValue), inSearch: true);
+        /// <summary>
+        /// Undo a move that was made with the MakeMove method
+        /// </summary>
+        public void UndoMove(Move move)
+        {
+            if (!move.IsNull)
+            {
+                repetitionTable.TryPop();
+                board.UndoMove(new Chess.Move(move.RawValue), inSearch: true);
                 OnPositionChanged();
-			}
-		}
+            }
+        }
 
-		/// <summary>
-		/// Try skip the current turn.
-		/// This will fail and return false if in check.
-		/// Note: skipping a turn is not allowed in the game, but it can be used as a search technique.
-		/// Skipped turns can be undone with UndoSkipTurn()
-		/// </summary>
-		public bool TrySkipTurn()
-		{
-			if (IsInCheck())
-			{
-				return false;
-			}
-			board.MakeNullMove();
+        /// <summary>
+        /// Try skip the current turn.
+        /// This will fail and return false if in check.
+        /// Note: skipping a turn is not allowed in the game, but it can be used as a search technique.
+        /// Skipped turns can be undone with UndoSkipTurn()
+        /// </summary>
+        public bool TrySkipTurn()
+        {
+            if (IsInCheck())
+            {
+                return false;
+            }
+            board.MakeNullMove();
             OnPositionChanged();
             return true;
-		}
+        }
 
         /// <summary>
         /// Forcibly skips the current turn.
@@ -135,8 +134,8 @@ namespace ChessChallenge.API
         /// Undo a turn that was succesfully skipped with TrySkipTurn() or ForceSkipTurn()
         /// </summary>
         public void UndoSkipTurn()
-		{
-			board.UnmakeNullMove();
+        {
+            board.UnmakeNullMove();
             OnPositionChanged();
         }
 
@@ -157,9 +156,9 @@ namespace ChessChallenge.API
                 moveGen.GenerateMoves(ref moveSpan, board, includeQuietMoves: true);
                 cachedLegalMoves = moveSpan.ToArray();
                 hasCachedMoves = true;
-				hasCachedMoveCount = true;
-				cachedMoveCount = moveSpan.Length;
-			}
+                hasCachedMoveCount = true;
+                cachedMoveCount = moveSpan.Length;
+            }
 
             return cachedLegalMoves;
         }
@@ -171,9 +170,9 @@ namespace ChessChallenge.API
 		/// efficient with memory by allocating moves on the stack rather than the heap.
         /// </summary>
         public void GetLegalMovesNonAlloc(ref Span<Move> moveList, bool capturesOnly = false)
-		{
-			bool includeQuietMoves = !capturesOnly;
-			moveGen.GenerateMoves(ref moveList, board, includeQuietMoves);
+        {
+            bool includeQuietMoves = !capturesOnly;
+            moveGen.GenerateMoves(ref moveList, board, includeQuietMoves);
             hasCachedMoveCount = true;
             cachedMoveCount = moveList.Length;
         }
@@ -191,15 +190,15 @@ namespace ChessChallenge.API
             return cachedLegalCaptureMoves;
         }
 
-		/// <summary>
-		/// Test if the player to move is in check in the current position.
-		/// </summary>
-		public bool IsInCheck() => moveGen.IsInitialized ? moveGen.InCheck() : board.IsInCheck();
+        /// <summary>
+        /// Test if the player to move is in check in the current position.
+        /// </summary>
+        public bool IsInCheck() => moveGen.IsInitialized ? moveGen.InCheck() : board.IsInCheck();
 
-		/// <summary>
-		/// Test if the current position is checkmate
-		/// </summary>
-		public bool IsInCheckmate() => IsInCheck() && HasZeroLegalMoves();
+        /// <summary>
+        /// Test if the current position is checkmate
+        /// </summary>
+        public bool IsInCheckmate() => IsInCheck() && HasZeroLegalMoves();
 
         /// <summary>
         /// Test if the current position is a draw due stalemate, repetition, insufficient material, or 50-move rule.
@@ -207,9 +206,9 @@ namespace ChessChallenge.API
         /// which is when the game is actually drawn). This quirk is to help bots avoid repeating positions unnecessarily.
         /// </summary>
         public bool IsDraw()
-		{
-			return IsFiftyMoveDraw() || IsInsufficientMaterial() || IsInStalemate() || IsRepeatedPosition();
-		}
+        {
+            return IsFiftyMoveDraw() || IsInsufficientMaterial() || IsInStalemate() || IsRepeatedPosition();
+        }
 
         /// <summary>
         /// Test if the current position is a draw due to stalemate
@@ -228,11 +227,11 @@ namespace ChessChallenge.API
         /// </summary>
         public bool IsRepeatedPosition() => depth > 0 && repetitionTable.Contains(board.ZobristKey);
 
-		/// <summary>
-		/// Test if there are sufficient pieces remaining on the board to potentially deliver checkmate.
-		/// If not, the game is automatically a draw.
-		/// </summary>
-		public bool IsInsufficientMaterial() => Arbiter.InsufficentMaterial(board);
+        /// <summary>
+        /// Test if there are sufficient pieces remaining on the board to potentially deliver checkmate.
+        /// If not, the game is automatically a draw.
+        /// </summary>
+        public bool IsInsufficientMaterial() => Arbiter.InsufficentMaterial(board);
 
         /// <summary>
         /// Does the given player still have the right to castle kingside?
@@ -271,27 +270,27 @@ namespace ChessChallenge.API
         /// Gets a list of pieces of the given type and colour
         /// </summary>
         public PieceList GetPieceList(PieceType pieceType, bool white)
-		{
-			return allPieceLists[PieceHelper.MakePiece((int)pieceType, white)];
-		}
-		/// <summary>
-		/// Gets an array of all the piece lists. In order these are:
-		/// Pawns(white), Knights (white), Bishops (white), Rooks (white), Queens (white), King (white),
-		/// Pawns (black), Knights (black), Bishops (black), Rooks (black), Queens (black), King (black)
-		/// </summary>
-		public PieceList[] GetAllPieceLists()
-		{
-			return validPieceLists;
-		}
-		
-		/// <summary>
-		/// Is the given square attacked by the opponent?
-		/// (opponent being whichever player doesn't currently have the right to move)
-		/// </summary>
-		public bool SquareIsAttackedByOpponent(Square square)
-		{
-			return BitboardHelper.SquareIsSet(moveGen.GetOpponentAttackMap(board), square);
-		}
+        {
+            return allPieceLists[PieceHelper.MakePiece((int)pieceType, white)];
+        }
+        /// <summary>
+        /// Gets an array of all the piece lists. In order these are:
+        /// Pawns(white), Knights (white), Bishops (white), Rooks (white), Queens (white), King (white),
+        /// Pawns (black), Knights (black), Bishops (black), Rooks (black), Queens (black), King (black)
+        /// </summary>
+        public PieceList[] GetAllPieceLists()
+        {
+            return validPieceLists;
+        }
+
+        /// <summary>
+        /// Is the given square attacked by the opponent?
+        /// (opponent being whichever player doesn't currently have the right to move)
+        /// </summary>
+        public bool SquareIsAttackedByOpponent(Square square)
+        {
+            return BitboardHelper.SquareIsSet(moveGen.GetOpponentAttackMap(board), square);
+        }
 
 
         /// <summary>
@@ -304,17 +303,17 @@ namespace ChessChallenge.API
         /// square that contains a piece of the given type and colour.
         /// </summary>
         public ulong GetPieceBitboard(PieceType pieceType, bool white)
-		{
-			return board.pieceBitboards[PieceHelper.MakePiece((int)pieceType, white)];
-		}
-		/// <summary>
-		/// 64-bit number where each bit that is set to 1 represents a square that contains any type of white piece.
-		/// </summary>
-		public ulong WhitePiecesBitboard => board.colourBitboards[Chess.Board.WhiteIndex];
-		/// <summary>
-		/// 64-bit number where each bit that is set to 1 represents a square that contains any type of black piece.
-		/// </summary>
-		public ulong BlackPiecesBitboard => board.colourBitboards[Chess.Board.BlackIndex];
+        {
+            return board.pieceBitboards[PieceHelper.MakePiece((int)pieceType, white)];
+        }
+        /// <summary>
+        /// 64-bit number where each bit that is set to 1 represents a square that contains any type of white piece.
+        /// </summary>
+        public ulong WhitePiecesBitboard => board.colourBitboards[Chess.Board.WhiteIndex];
+        /// <summary>
+        /// 64-bit number where each bit that is set to 1 represents a square that contains any type of black piece.
+        /// </summary>
+        public ulong BlackPiecesBitboard => board.colourBitboards[Chess.Board.BlackIndex];
 
         /// <summary>
         /// 64-bit number where each bit that is set to 1 represents a
@@ -336,29 +335,29 @@ namespace ChessChallenge.API
         /// </summary>
         public int FiftyMoveCounter => board.currentGameState.fiftyMoveCounter;
 
-		/// <summary>
-		/// 64-bit hash of the current position
-		/// </summary>
-		public ulong ZobristKey => board.ZobristKey;
+        /// <summary>
+        /// 64-bit hash of the current position
+        /// </summary>
+        public ulong ZobristKey => board.ZobristKey;
 
-		/// <summary>
-		/// Zobrist keys for all the positions played in the game so far. This is reset whenever a
-		/// pawn move or capture is made, as previous positions are now impossible to reach again.
-		/// Note that this is not updated when your bot makes moves on the board while thinking,
-		/// but rather only when moves are actually played in the game.
-		/// </summary>
-		public ulong[] GameRepetitionHistory { get; private set; }
+        /// <summary>
+        /// Zobrist keys for all the positions played in the game so far. This is reset whenever a
+        /// pawn move or capture is made, as previous positions are now impossible to reach again.
+        /// Note that this is not updated when your bot makes moves on the board while thinking,
+        /// but rather only when moves are actually played in the game.
+        /// </summary>
+        public ulong[] GameRepetitionHistory { get; private set; }
 
         /// <summary>
         /// FEN representation of the game's starting position.
         /// </summary>
         public string GameStartFenString => board.GameStartFen;
 
-		/// <summary>
-		/// All the moves played in the game so far.
-		/// This only includes moves played in the actual game, not moves made on the board while the bot is thinking.
-		/// </summary>
-		public Move[] GameMoveHistory { get; private set; }
+        /// <summary>
+        /// All the moves played in the game so far.
+        /// This only includes moves played in the actual game, not moves made on the board while the bot is thinking.
+        /// </summary>
+        public Move[] GameMoveHistory { get; private set; }
 
         /// <summary>
         /// Creates an ASCII-diagram of the current position.
@@ -429,13 +428,13 @@ namespace ChessChallenge.API
             }
         }
 
-		public override string ToString() => CreateDiagram();
+        public override string ToString() => CreateDiagram();
 
-		/// <summary>
-		/// Creates a board from the given fen string. Please note that this is quite slow, and so it is advised
-		/// to use the board given in the Think function, and update it using MakeMove and UndoMove instead.
-		/// </summary>
-		public static Board CreateBoardFromFEN(string fen)
+        /// <summary>
+        /// Creates a board from the given fen string. Please note that this is quite slow, and so it is advised
+        /// to use the board given in the Think function, and update it using MakeMove and UndoMove instead.
+        /// </summary>
+        public static Board CreateBoardFromFEN(string fen)
         {
             Chess.Board boardCore = new Chess.Board();
             boardCore.LoadPosition(fen);
@@ -447,17 +446,17 @@ namespace ChessChallenge.API
             moveGen.NotifyPositionChanged();
             hasCachedMoves = false;
             hasCachedCaptureMoves = false;
-			hasCachedMoveCount = false;
+            hasCachedMoveCount = false;
         }
 
-		bool HasZeroLegalMoves()
-		{
-			if (hasCachedMoveCount)
-			{
-				return cachedMoveCount == 0;
-			}
-			return moveGen.NoLegalMovesInPosition(board);
-		}
+        bool HasZeroLegalMoves()
+        {
+            if (hasCachedMoveCount)
+            {
+                return cachedMoveCount == 0;
+            }
+            return moveGen.NoLegalMovesInPosition(board);
+        }
 
     }
 }

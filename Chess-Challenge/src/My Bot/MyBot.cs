@@ -4,20 +4,38 @@ using System.Collections.Generic;
 
 public class MyBot : IChessBot
 {
+    private const ulong FIRST_RANK = 255;
+    private const ulong LAST_RANK = 18374686479671623680;
+    private const ulong CENTER = 103481868288;
     Board board;
-    int depth = 7;
+    int depth = 20;
     Dictionary<ulong, byte> order;
+    int moveEstimate = 200;
 
     public Move Think(Board board, Timer timer)
     {
+        int gameLength = board.GameMoveHistory.Length;
+        int movesRemaining = moveEstimate - gameLength;
+        if (movesRemaining <= 0)
+        {
+            moveEstimate += 50;
+            movesRemaining = moveEstimate - gameLength;
+        }
+        double timeForMove = timer.MillisecondsRemaining / movesRemaining;
         order = new Dictionary<ulong, byte>();
         this.board = board;
         MoveDouble bestMove = new MoveDouble(new Move(), double.NaN);
+        int depthCalculated = 0;
         for (int i = 0; i < depth; i++)
         {
             bestMove = alphaBeta(double.MinValue, double.MaxValue, i);
+            if (timer.MillisecondsElapsedThisTurn >= timeForMove)
+            {
+                depthCalculated = i;
+                break;
+            }
         }
-        Console.WriteLine("MyBot: " + bestMove.GetEval());
+        //Console.WriteLine("MyBot: " + bestMove.GetEval() + "; depth: " + depthCalculated);
         return bestMove.GetMove();
     }
 
@@ -32,7 +50,6 @@ public class MyBot : IChessBot
         {
             return new MoveDouble(new Move(), EvaluatePosition());
         }
-        //Array.Sort(moves, new MyMoveComparer(board));
         if (order.TryGetValue(board.ZobristKey, out byte index))
         {
             (moves[index], moves[0]) = (moves[0], moves[index]);
@@ -49,7 +66,7 @@ public class MyBot : IChessBot
             {
                 if (score.GetEval() >= beta)
                 {
-                    order[board.ZobristKey] = (byte) (i == 0 ? index : i == index ? 0 : i);
+                    order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
                     return new MoveDouble(move, score.GetEval());
                 }
                 if (score.GetEval() > alpha)
@@ -59,7 +76,7 @@ public class MyBot : IChessBot
                     bestMoveIndex = i;
                     if (alpha == 1000)
                     {
-                        order[board.ZobristKey] = (byte) (i == 0 ? index : i == index ? 0 : i);
+                        order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
                         return bestMove;
                     }
                 }
@@ -68,7 +85,7 @@ public class MyBot : IChessBot
             {
                 if (score.GetEval() <= alpha)
                 {
-                    order[board.ZobristKey] = (byte) (i == 0 ? index : i == index ? 0 : i);
+                    order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
                     return new MoveDouble(move, score.GetEval());
                 }
                 if (score.GetEval() < beta)
@@ -78,7 +95,7 @@ public class MyBot : IChessBot
                     bestMoveIndex = i;
                     if (beta == -1000)
                     {
-                        order[board.ZobristKey] = (byte) (i == 0 ? index : i == index ? 0 : i);
+                        order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
                         return bestMove;
                     }
                 }
@@ -88,84 +105,6 @@ public class MyBot : IChessBot
         order[board.ZobristKey] = bestMoveIndex;
         return bestMove;
     }
-
-    /*private double EvaluatePosition()
-    {
-        if (board.IsInCheckmate())
-        {
-            return !board.IsWhiteToMove ? 1000 : -1000;
-        }
-        else if (board.IsDraw())
-        {
-            return 0;
-        }
-
-        double white = 0;
-        double black = 0;
-
-        PieceList[] pieceLists = board.GetAllPieceLists();
-        for (int i = 0; i < pieceLists.Length; i++)
-        {
-            PieceList pieceList = pieceLists[i];
-            if (pieceList.Count == 0)
-            {
-                continue;
-            }
-            double pieceValue = getPieceValue(pieceList.GetPiece(0).PieceType);
-            foreach (var piece in pieceList)
-            {
-                ulong attacks = 0;
-                if (piece.IsBishop || piece.IsRook || piece.IsQueen)
-                {
-                    attacks = BitboardHelper.GetSliderAttacks(piece.PieceType, piece.Square, board);
-                } else if (piece.IsKnight)
-                {
-                    attacks = BitboardHelper.GetKnightAttacks(piece.Square);
-                } else if (piece.IsPawn)
-                {
-                    attacks = BitboardHelper.GetPawnAttacks(piece.Square, piece.IsWhite);
-                } else if (piece.IsKing)
-                {
-                    attacks = BitboardHelper.GetKingAttacks(piece.Square);
-                }
-                if (i < pieceLists.Length / 2)
-                {
-                    attacks = attacks & board.WhitePiecesBitboard;
-
-                    white += pieceValue + (BitOperations.PopCount(attacks)/5);
-                }
-                else
-                {
-                    attacks = attacks & board.BlackPiecesBitboard;
-                    black += pieceValue + (BitOperations.PopCount(attacks)/5);
-                }
-            }
-        }
-
-        double eval = (white - black);
-        return eval;
-    }
-
-    private double getPieceValue(PieceType pieceType)
-    {
-        switch (pieceType)
-        {
-            case PieceType.Pawn:
-                return 1;
-            case PieceType.Knight:
-                return 3;
-            case PieceType.Bishop:
-                return 3.5;
-            case PieceType.Rook:
-                return 5;
-            case PieceType.Queen:
-                return 9;
-            case PieceType.King:
-                return 0;
-            default:
-                return 0;
-        }
-    }*/
 
     private double EvaluatePosition()
     {
@@ -189,9 +128,31 @@ public class MyBot : IChessBot
             + pls[8].Count * 3.5
             + pls[9].Count * 5
             + pls[10].Count * 9;
-
+        int undevelopedWhitePieces = NumberOfSetBits(getPiecesOnFirstRank(true));
+        int undevelopedBlackPieces = NumberOfSetBits(getPiecesOnFirstRank(false));
+        int whiteCenterPawns = NumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, true) & CENTER);
+        int blackCenterPawns = NumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, false) & CENTER);
+        Square whiteKingSquare = board.GetKingSquare(true);
+        Square blackKingSquare = board.GetKingSquare(false);
+        bool isEndgame = (white < 13) && (black < 13);
+        double whiteKingScore = (isEndgame ? -(8 - whiteKingSquare.Rank) / 8d : (+(8 - whiteKingSquare.Rank) / 8d + ((whiteKingSquare.File == 6 || whiteKingSquare.File == 2) ? 0.5 : 0)));
+        double blackKingScore = (isEndgame ? +(8 - blackKingSquare.Rank) / 8d : (-(8 - blackKingSquare.Rank) / 8d + ((blackKingSquare.File == 6 || blackKingSquare.File == 2) ? 0.5 : 0)));
+        white += -undevelopedWhitePieces / 5d + whiteCenterPawns / 4d + whiteKingScore;
+        black += -undevelopedBlackPieces / 5d + blackCenterPawns / 4d + blackKingScore;
         double eval = (white - black);
         return eval;
+    }
+
+    private ulong getPiecesOnFirstRank(bool white)
+    {
+        return ((white ? board.WhitePiecesBitboard : board.BlackPiecesBitboard) ^ board.GetPieceBitboard(PieceType.King, white) ^ board.GetPieceBitboard(PieceType.Pawn, white) ^ board.GetPieceBitboard(PieceType.Rook, white)) & (white ? FIRST_RANK : LAST_RANK);
+    }
+
+    static int NumberOfSetBits(ulong i)
+    {
+        i = i - ((i >> 1) & 0x5555555555555555UL);
+        i = (i & 0x3333333333333333UL) + ((i >> 2) & 0x3333333333333333UL);
+        return (int)(unchecked(((i + (i >> 4)) & 0xF0F0F0F0F0F0F0FUL) * 0x101010101010101UL) >> 56);
     }
 }
 
@@ -202,113 +163,11 @@ class MoveDouble
 
     public MoveDouble(Move lastMove, double v)
     {
-        this.move = lastMove;
-        this.eval = v;
+        move = lastMove;
+        eval = v;
     }
 
     public Move GetMove() { return move; }
 
     public double GetEval() { return eval; }
-}
-
-class MyMoveComparer : IComparer<Move>
-{
-    private Board board;
-
-    public MyMoveComparer(Board board)
-    {
-        this.board = board;
-    }
-
-    public int Compare(Move x, Move y)
-    {
-        int result = 0;
-        result = sort(result, isCheckMate(y), isCheckMate(x));
-        result = sort(result, isCheck(y), isCheck(x));
-        result = sort(result, y.CapturePieceType, x.CapturePieceType);
-        result = sort(result, movesTowardsCenter(y), movesTowardsCenter(x));
-        result = sort(result, movesForward(y, board.IsWhiteToMove), movesForward(x, board.IsWhiteToMove));
-        return result;
-    }
-
-    private bool movesTowardsCenter(Move y)
-    {
-        double startDist = getDist(y.StartSquare.Rank, y.StartSquare.File, 4.5, 4.5);
-        double endDist = getDist(y.TargetSquare.Rank, y.TargetSquare.File, 4.5, 4.5);
-        return startDist > endDist;
-    }
-
-    private double getDist(double x1, double y1, double x2, double y2)
-    {
-        return Math.Sqrt(Math.Pow(x1 - x2, 2) + Math.Pow(y1 - y2, 2));
-    }
-
-    private bool isCheckMate(Move y)
-    {
-        board.MakeMove(y);
-        bool result = board.IsInCheckmate();
-        board.UndoMove(y);
-        return result;
-    }
-
-    private bool movesForward(Move x, bool isWhiteToMove)
-    {
-        if (isWhiteToMove)
-        {
-            if ((x.StartSquare.Rank - x.TargetSquare.Rank) > 0)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        else
-        {
-            if ((x.StartSquare.Rank - x.TargetSquare.Rank) < 0)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-    }
-
-    private bool isCheck(Move x)
-    {
-        board.MakeMove(x);
-        bool isCheck = board.IsInCheck();
-        board.UndoMove(x);
-        return isCheck;
-    }
-
-    private int sort(int old, bool a, bool b)
-    {
-        if (old == 0)
-        {
-            return a == b ? 0 : a ? 1 : -1;
-        }
-        return old;
-    }
-
-    private int sort(int old, Enum a, Enum b)
-    {
-        if (old == 0)
-        {
-            return a.CompareTo(b);
-        }
-        return old;
-    }
-
-    private int sort(int old, int a, int b)
-    {
-        if (old == 0)
-        {
-            return a.CompareTo(b);
-        }
-        return old;
-    }
 }

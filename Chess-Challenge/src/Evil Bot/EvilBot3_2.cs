@@ -1,7 +1,7 @@
 ﻿using ChessChallenge.API;
 using System.Collections.Generic;
 
-namespace ChessChallenge.Example
+namespace ChessChallenge.EvilBot3_2
 {
     internal class EvilBot : IChessBot
     {
@@ -36,7 +36,6 @@ namespace ChessChallenge.Example
                     break;
                 }
             }
-            //Console.WriteLine("MyBot: " + bestMove.GetEval() + "; depth: " + depthCalculated);
             return bestMove.GetMove();
         }
 
@@ -129,24 +128,14 @@ namespace ChessChallenge.Example
                 + pls[8].Count * 3.5
                 + pls[9].Count * 5
                 + pls[10].Count * 9;
-            int undevelopedWhitePieces = NumberOfSetBits(getPiecesOnFirstRank(true));
-            int undevelopedBlackPieces = NumberOfSetBits(getPiecesOnFirstRank(false));
+            int undevelopedWhitePieces = NumberOfSetBits((board.WhitePiecesBitboard ^ board.GetPieceBitboard(PieceType.King, true) ^ board.GetPieceBitboard(PieceType.Pawn, true) ^ board.GetPieceBitboard(PieceType.Rook, true)) & FIRST_RANK);
+            int undevelopedBlackPieces = NumberOfSetBits((board.BlackPiecesBitboard ^ board.GetPieceBitboard(PieceType.King, false) ^ board.GetPieceBitboard(PieceType.Pawn, false) ^ board.GetPieceBitboard(PieceType.Rook, false)) & LAST_RANK);
             int whiteCenterPawns = NumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, true) & CENTER);
             int blackCenterPawns = NumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, false) & CENTER);
-            Square whiteKingSquare = board.GetKingSquare(true);
-            Square blackKingSquare = board.GetKingSquare(false);
-            bool isEndgame = (white < 13) && (black < 13);
-            double whiteKingScore = (isEndgame ? -(8 - whiteKingSquare.Rank) / 8d : (+(8 - whiteKingSquare.Rank) / 8d + ((whiteKingSquare.File == 6 || whiteKingSquare.File == 2) ? 0.5 : 0)));
-            double blackKingScore = (isEndgame ? +(8 - blackKingSquare.Rank) / 8d : (-(8 - blackKingSquare.Rank) / 8d + ((blackKingSquare.File == 6 || blackKingSquare.File == 2) ? 0.5 : 0)));
-            white += -undevelopedWhitePieces / 5d + whiteCenterPawns / 4d + whiteKingScore;
-            black += -undevelopedBlackPieces / 5d + blackCenterPawns / 4d + blackKingScore;
+            white += -undevelopedWhitePieces / 5d + whiteCenterPawns / 4d;
+            black += -undevelopedBlackPieces / 5d + blackCenterPawns / 4d;
             double eval = (white - black);
             return eval;
-        }
-
-        private ulong getPiecesOnFirstRank(bool white)
-        {
-            return ((white ? board.WhitePiecesBitboard : board.BlackPiecesBitboard) ^ board.GetPieceBitboard(PieceType.King, white) ^ board.GetPieceBitboard(PieceType.Pawn, white) ^ board.GetPieceBitboard(PieceType.Rook, white)) & (white ? FIRST_RANK : LAST_RANK);
         }
 
         static int NumberOfSetBits(ulong i)
@@ -164,8 +153,8 @@ namespace ChessChallenge.Example
 
         public MoveDouble(Move lastMove, double v)
         {
-            move = lastMove;
-            eval = v;
+            this.move = lastMove;
+            this.eval = v;
         }
 
         public Move GetMove() { return move; }
