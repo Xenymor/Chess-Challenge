@@ -5,14 +5,18 @@ using System.Collections.Generic;
 public class MyBot : IChessBot
 {
     Board board;
-    int depth = 5;
-    Dictionary<ulong, byte> order = new Dictionary<ulong, byte>();
+    int depth = 7;
+    Dictionary<ulong, byte> order;
 
     public Move Think(Board board, Timer timer)
     {
+        order = new Dictionary<ulong, byte>();
         this.board = board;
         MoveDouble bestMove = new MoveDouble(new Move(), double.NaN);
-        bestMove = alphaBeta(double.MinValue, double.MaxValue, depth);
+        for (int i = 0; i < depth; i++)
+        {
+            bestMove = alphaBeta(double.MinValue, double.MaxValue, i);
+        }
         Console.WriteLine("MyBot: " + bestMove.GetEval());
         return bestMove.GetMove();
     }
@@ -28,7 +32,7 @@ public class MyBot : IChessBot
         {
             return new MoveDouble(new Move(), EvaluatePosition());
         }
-        Array.Sort(moves, new MyMoveComparer(board));
+        //Array.Sort(moves, new MyMoveComparer(board));
         if (order.TryGetValue(board.ZobristKey, out byte index))
         {
             (moves[index], moves[0]) = (moves[0], moves[index]);

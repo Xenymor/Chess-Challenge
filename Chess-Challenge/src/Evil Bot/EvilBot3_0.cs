@@ -2,48 +2,32 @@
 using System;
 using System.Collections.Generic;
 
-namespace ChessChallenge.Example
+namespace ChessChallenge.EvilBot3_0
 {
     internal class EvilBot : IChessBot
     {
         Board board;
-        int depth = 7;
-        Dictionary<ulong, byte> order;
+        int depth = 5;
 
         public Move Think(Board board, Timer timer)
         {
-            order = new Dictionary<ulong, byte>();
             this.board = board;
-            MoveDouble bestMove = new MoveDouble(new Move(), double.NaN);
-            for (int i = 0; i < depth; i++)
-            {
-                bestMove = alphaBeta(double.MinValue, double.MaxValue, i);
-            }
-            Console.WriteLine("MyBot: " + bestMove.GetEval());
+            MoveDouble bestMove = alphaBeta(double.MinValue, double.MaxValue, depth);
+            Console.WriteLine("EvilBot: " + bestMove.GetEval());
             return bestMove.GetMove();
         }
 
         private MoveDouble alphaBeta(double alpha, double beta, int depth)
         {
-            if (depth <= 0 || board.IsDraw() || board.IsInCheckmate())
-            {
-                return new MoveDouble(new Move(), EvaluatePosition());
-            }
             Move[] moves = board.GetLegalMoves();
-            if (moves.Length == 0)
+            if (depth <= 0 || moves.Length == 0 || board.IsDraw() || board.IsInCheckmate())
             {
                 return new MoveDouble(new Move(), EvaluatePosition());
             }
-            //Array.Sort(moves, new MyMoveComparer(board));
-            if (order.TryGetValue(board.ZobristKey, out byte index))
-            {
-                (moves[index], moves[0]) = (moves[0], moves[index]);
-            }
+            Array.Sort(moves, new MyMoveComparer(board));
             MoveDouble bestMove = new MoveDouble(new Move(), !board.IsWhiteToMove ? double.MaxValue : double.MinValue);
-            byte bestMoveIndex = 0;
-            for (byte i = 0; i < moves.Length; i++)
+            foreach (Move move in moves)
             {
-                Move move = moves[i];
                 board.MakeMove(move);
                 MoveDouble score = alphaBeta(alpha, beta, depth - 1);
                 board.UndoMove(move);
@@ -51,123 +35,42 @@ namespace ChessChallenge.Example
                 {
                     if (score.GetEval() >= beta)
                     {
-                        order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
                         return new MoveDouble(move, score.GetEval());
                     }
                     if (score.GetEval() > alpha)
                     {
                         alpha = score.GetEval();
                         bestMove = new MoveDouble(move, alpha);
-                        bestMoveIndex = i;
                         if (alpha == 1000)
                         {
-                            order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
                             return bestMove;
                         }
                     }
+
                 }
                 else
                 {
                     if (score.GetEval() <= alpha)
                     {
-                        order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
                         return new MoveDouble(move, score.GetEval());
                     }
                     if (score.GetEval() < beta)
                     {
                         beta = score.GetEval();
                         bestMove = new MoveDouble(move, beta);
-                        bestMoveIndex = i;
                         if (beta == -1000)
                         {
-                            order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
                             return bestMove;
                         }
                     }
                 }
             }
-            bestMoveIndex = (byte)((bestMoveIndex == index) ? 0 : (bestMoveIndex == 0) ? index : bestMoveIndex);
-            order[board.ZobristKey] = bestMoveIndex;
+            /*if (bestMove.GetMove().Equals(new Move())) {
+                Console.WriteLine("alpha: " + alpha + "; beta: " + beta + "; PlayerToMove: " + board.IsWhiteToMove + "; Depth remaining: " + depth);
+                Environment.Exit(-1);
+            }*/
             return bestMove;
         }
-
-        /*private double EvaluatePosition()
-        {
-            if (board.IsInCheckmate())
-            {
-                return !board.IsWhiteToMove ? 1000 : -1000;
-            }
-            else if (board.IsDraw())
-            {
-                return 0;
-            }
-
-            double white = 0;
-            double black = 0;
-
-            PieceList[] pieceLists = board.GetAllPieceLists();
-            for (int i = 0; i < pieceLists.Length; i++)
-            {
-                PieceList pieceList = pieceLists[i];
-                if (pieceList.Count == 0)
-                {
-                    continue;
-                }
-                double pieceValue = getPieceValue(pieceList.GetPiece(0).PieceType);
-                foreach (var piece in pieceList)
-                {
-                    ulong attacks = 0;
-                    if (piece.IsBishop || piece.IsRook || piece.IsQueen)
-                    {
-                        attacks = BitboardHelper.GetSliderAttacks(piece.PieceType, piece.Square, board);
-                    } else if (piece.IsKnight)
-                    {
-                        attacks = BitboardHelper.GetKnightAttacks(piece.Square);
-                    } else if (piece.IsPawn)
-                    {
-                        attacks = BitboardHelper.GetPawnAttacks(piece.Square, piece.IsWhite);
-                    } else if (piece.IsKing)
-                    {
-                        attacks = BitboardHelper.GetKingAttacks(piece.Square);
-                    }
-                    if (i < pieceLists.Length / 2)
-                    {
-                        attacks = attacks & board.WhitePiecesBitboard;
-
-                        white += pieceValue + (BitOperations.PopCount(attacks)/5);
-                    }
-                    else
-                    {
-                        attacks = attacks & board.BlackPiecesBitboard;
-                        black += pieceValue + (BitOperations.PopCount(attacks)/5);
-                    }
-                }
-            }
-
-            double eval = (white - black);
-            return eval;
-        }
-
-        private double getPieceValue(PieceType pieceType)
-        {
-            switch (pieceType)
-            {
-                case PieceType.Pawn:
-                    return 1;
-                case PieceType.Knight:
-                    return 3;
-                case PieceType.Bishop:
-                    return 3.5;
-                case PieceType.Rook:
-                    return 5;
-                case PieceType.Queen:
-                    return 9;
-                case PieceType.King:
-                    return 0;
-                default:
-                    return 0;
-            }
-        }*/
 
         private double EvaluatePosition()
         {
@@ -228,21 +131,8 @@ namespace ChessChallenge.Example
             result = sort(result, isCheckMate(y), isCheckMate(x));
             result = sort(result, isCheck(y), isCheck(x));
             result = sort(result, y.CapturePieceType, x.CapturePieceType);
-            result = sort(result, movesTowardsCenter(y), movesTowardsCenter(x));
             result = sort(result, movesForward(y, board.IsWhiteToMove), movesForward(x, board.IsWhiteToMove));
             return result;
-        }
-
-        private bool movesTowardsCenter(Move y)
-        {
-            double startDist = getDist(y.StartSquare.Rank, y.StartSquare.File, 4.5, 4.5);
-            double endDist = getDist(y.TargetSquare.Rank, y.TargetSquare.File, 4.5, 4.5);
-            return startDist > endDist;
-        }
-
-        private double getDist(double x1, double y1, double x2, double y2)
-        {
-            return Math.Sqrt(Math.Pow(x1 - x2, 2) + Math.Pow(y1 - y2, 2));
         }
 
         private bool isCheckMate(Move y)
