@@ -8,7 +8,7 @@ public class MyBot : IChessBot
     private const ulong LAST_RANK = 18374686479671623680;
     private const ulong CENTER = 103481868288;
     Board board;
-    int depth = 20;
+    const int depth = 20;
     Dictionary<ulong, byte> order;
     int moveEstimate = 200;
 
@@ -35,7 +35,7 @@ public class MyBot : IChessBot
                 break;
             }
         }
-        //Console.WriteLine("MyBot: " + bestMove.GetEval() + "; depth: " + depthCalculated);
+        Console.WriteLine("MyBot: " + bestMove.GetEval() + "; depth: " + depthCalculated);
         return bestMove.GetMove();
     }
 
@@ -128,24 +128,24 @@ public class MyBot : IChessBot
             + pls[8].Count * 3.5
             + pls[9].Count * 5
             + pls[10].Count * 9;
+        bool isEndgame = (white < 13) && (black < 13);
         int undevelopedWhitePieces = NumberOfSetBits(getPiecesOnFirstRank(true));
         int undevelopedBlackPieces = NumberOfSetBits(getPiecesOnFirstRank(false));
-        int whiteCenterPawns = NumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, true) & CENTER);
-        int blackCenterPawns = NumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, false) & CENTER);
+        int whiteCenterPawns = isEndgame ? 0 : NumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, true) & CENTER);
+        int blackCenterPawns = isEndgame ? 0 : NumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, false) & CENTER);
         Square whiteKingSquare = board.GetKingSquare(true);
         Square blackKingSquare = board.GetKingSquare(false);
-        bool isEndgame = (white < 13) && (black < 13);
-        double whiteKingScore = (isEndgame ? -(8 - whiteKingSquare.Rank) / 8d : (+(8 - whiteKingSquare.Rank) / 8d + ((whiteKingSquare.File == 6 || whiteKingSquare.File == 2) ? 0.5 : 0)));
-        double blackKingScore = (isEndgame ? +(8 - blackKingSquare.Rank) / 8d : (-(8 - blackKingSquare.Rank) / 8d + ((blackKingSquare.File == 6 || blackKingSquare.File == 2) ? 0.5 : 0)));
+        double whiteKingScore = isEndgame ? -(8 - whiteKingSquare.Rank) / 10d : (+(8 - whiteKingSquare.Rank) / 8d + (isEndgame ? ((whiteKingSquare.File == 6 || whiteKingSquare.File == 2) ? 0.5 : 0) : 0));
+        double blackKingScore = isEndgame ? +(8 - blackKingSquare.Rank) / 10d : (-(8 - blackKingSquare.Rank) / 8d + (isEndgame ? ((blackKingSquare.File == 6 || blackKingSquare.File == 2) ? 0.5 : 0) : 0));
         white += -undevelopedWhitePieces / 5d + whiteCenterPawns / 4d + whiteKingScore;
         black += -undevelopedBlackPieces / 5d + blackCenterPawns / 4d + blackKingScore;
         double eval = (white - black);
         return eval;
     }
 
-    private ulong getPiecesOnFirstRank(bool white)
+    private ulong getPiecesOnFirstRank(bool isWhite)
     {
-        return ((white ? board.WhitePiecesBitboard : board.BlackPiecesBitboard) ^ board.GetPieceBitboard(PieceType.King, white) ^ board.GetPieceBitboard(PieceType.Pawn, white) ^ board.GetPieceBitboard(PieceType.Rook, white)) & (white ? FIRST_RANK : LAST_RANK);
+        return ((isWhite ? board.WhitePiecesBitboard : board.BlackPiecesBitboard) ^ board.GetPieceBitboard(PieceType.King, isWhite) ^ board.GetPieceBitboard(PieceType.Pawn, isWhite) ^ board.GetPieceBitboard(PieceType.Rook, isWhite) ^ board.GetPieceBitboard(PieceType.Queen, isWhite)) & (isWhite ? FIRST_RANK : LAST_RANK);
     }
 
     static int NumberOfSetBits(ulong i)

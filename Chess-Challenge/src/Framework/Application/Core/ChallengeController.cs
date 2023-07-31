@@ -26,7 +26,7 @@ namespace ChessChallenge.Application
         readonly Random rng;
         int gameID;
         bool isPlaying;
-        Board board;
+        public Board board;
         public ChessPlayer PlayerWhite { get; private set; }
         public ChessPlayer PlayerBlack { get; private set; }
 
