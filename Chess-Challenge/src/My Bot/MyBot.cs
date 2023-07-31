@@ -45,46 +45,42 @@ public class MyBot : IChessBot
             {
                 if (score.GetEval() >= beta)
                 {
-                    order[board.ZobristKey] = (byte)i;
+                    order[board.ZobristKey] = (byte) (i == 0 ? index : i == index ? 0 : i);
                     return new MoveDouble(move, score.GetEval());
                 }
                 if (score.GetEval() > alpha)
                 {
                     alpha = score.GetEval();
                     bestMove = new MoveDouble(move, alpha);
-                    bestMoveIndex = (byte)i;
+                    bestMoveIndex = i;
                     if (alpha == 1000)
                     {
-                        order[board.ZobristKey] = (byte)i;
+                        order[board.ZobristKey] = (byte) (i == 0 ? index : i == index ? 0 : i);
                         return bestMove;
                     }
                 }
-
             }
             else
             {
                 if (score.GetEval() <= alpha)
                 {
-                    order[board.ZobristKey] = (byte)i;
+                    order[board.ZobristKey] = (byte) (i == 0 ? index : i == index ? 0 : i);
                     return new MoveDouble(move, score.GetEval());
                 }
                 if (score.GetEval() < beta)
                 {
                     beta = score.GetEval();
                     bestMove = new MoveDouble(move, beta);
-                    bestMoveIndex = (byte)i;
+                    bestMoveIndex = i;
                     if (beta == -1000)
                     {
-                        order[board.ZobristKey] = (byte)i;
+                        order[board.ZobristKey] = (byte) (i == 0 ? index : i == index ? 0 : i);
                         return bestMove;
                     }
                 }
             }
         }
-        /*if (bestMove.GetMove().Equals(new Move())) {
-            Console.WriteLine("alpha: " + alpha + "; beta: " + beta + "; PlayerToMove: " + board.IsWhiteToMove + "; Depth remaining: " + depth);
-            Environment.Exit(-1);
-        }*/
+        bestMoveIndex = (byte)((bestMoveIndex == index) ? 0 : (bestMoveIndex == 0) ? index : bestMoveIndex);
         order[board.ZobristKey] = bestMoveIndex;
         return bestMove;
     }

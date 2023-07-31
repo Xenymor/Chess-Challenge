@@ -4,6 +4,7 @@ namespace ChessChallenge.API
     using ChessChallenge.Chess;
     using System;
     using System.Collections.Generic;
+    using System.Linq;
 
     public sealed class Board
     {
