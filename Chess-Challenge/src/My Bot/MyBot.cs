@@ -4,9 +4,9 @@ using System.Collections.Generic;
 
 public class MyBot : IChessBot
 {
-    private const ulong FIRST_RANK = 255;
+    private const ulong FIRST_RANK = 0xFF;
     private const ulong LAST_RANK = 18374686479671623680;
-    private const ulong CENTER = 103481868288;
+    private const ulong CENTER = 0x1818000000;
     Board board;
     const int depth = 20;
     Dictionary<ulong, byte> order;
@@ -135,8 +135,8 @@ public class MyBot : IChessBot
         int blackCenterPawns = isEndgame ? 0 : NumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, false) & CENTER);
         Square whiteKingSquare = board.GetKingSquare(true);
         Square blackKingSquare = board.GetKingSquare(false);
-        double whiteKingScore = isEndgame ? -(8 - whiteKingSquare.Rank) / 10d : (+(8 - whiteKingSquare.Rank) / 8d + (isEndgame ? ((whiteKingSquare.File == 6 || whiteKingSquare.File == 2) ? 0.5 : 0) : 0));
-        double blackKingScore = isEndgame ? +(8 - blackKingSquare.Rank) / 10d : (-(8 - blackKingSquare.Rank) / 8d + (isEndgame ? ((blackKingSquare.File == 6 || blackKingSquare.File == 2) ? 0.5 : 0) : 0));
+        double whiteKingScore = isEndgame ? -(8 - whiteKingSquare.Rank) / 8d : (+(8 - whiteKingSquare.Rank) / 8d + (isEndgame ? ((whiteKingSquare.File == 6 || whiteKingSquare.File == 2) ? 0.5 : 0) : 0));
+        double blackKingScore = isEndgame ? +(8 - blackKingSquare.Rank) / 8d : (-(8 - blackKingSquare.Rank) / 8d + (isEndgame ? ((blackKingSquare.File == 6 || blackKingSquare.File == 2) ? 0.5 : 0) : 0));
         white += -undevelopedWhitePieces / 5d + whiteCenterPawns / 4d + whiteKingScore;
         black += -undevelopedBlackPieces / 5d + blackCenterPawns / 4d + blackKingScore;
         double eval = (white - black);
