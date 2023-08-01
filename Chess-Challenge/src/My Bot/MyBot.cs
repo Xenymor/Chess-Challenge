@@ -10,7 +10,7 @@ public class MyBot : IChessBot
     private const ulong CENTER = 0x1818000000;
     Board board;
     const int depth = 20;
-    Dictionary<ulong, object[]> order;
+    Dictionary<ulong, object[]> order = new Dictionary<ulong, object[]>();
     int moveEstimate = 200;
 
     public Move Think(Board board, Timer timer)
@@ -98,7 +98,6 @@ public class MyBot : IChessBot
                 {
                     beta = score.eval;
                     bestMove = new MoveDouble(move, beta);
-                    byte bestMoveIndex = i;
                     if (beta == -1000)
                     {
                         order[board.ZobristKey] = new object[] { depth, bestMove };
