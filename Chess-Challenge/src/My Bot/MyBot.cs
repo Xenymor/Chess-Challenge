@@ -30,15 +30,15 @@ public class MyBot : IChessBot
         for (byte i = 1; i < depth; i++)
         {
             bestMove = alphaBeta(double.MinValue, double.MaxValue, i);
-            Console.WriteLine("-- MyBot: " + bestMove.GetEval() + "; Move: " + bestMove.GetMove() + "; depth: " + i);
+            //Console.WriteLine("-- MyBot: " + bestMove.eval + "; Move: " + bestMove.move + "; depth: " + i);
             if (timer.MillisecondsElapsedThisTurn >= timeForMove)
             {
                 depthCalculated = i;
                 break;
             }
         }
-        Console.WriteLine("MyBot: " + bestMove.GetEval() + "; depth: " + depthCalculated);
-        return bestMove.GetMove();
+        Console.WriteLine("MyBot: " + bestMove.eval + "; depth: " + depthCalculated);
+        return bestMove.move;
     }
 
     private MoveDouble alphaBeta(double alpha, double beta, byte depth)
@@ -69,15 +69,15 @@ public class MyBot : IChessBot
             board.UndoMove(move);
             if (board.IsWhiteToMove)
             {
-                if (score.GetEval() >= beta)
+                if (score.eval >= beta)
                 {
-                    MoveDouble result = new MoveDouble(move, score.GetEval());
+                    MoveDouble result = new MoveDouble(move, score.eval);
                     order[board.ZobristKey] = new object[] {depth, result};
                     return result;
                 }
-                if (score.GetEval() > alpha)
+                if (score.eval > alpha)
                 {
-                    alpha = score.GetEval();
+                    alpha = score.eval;
                     bestMove = new MoveDouble(move, alpha);
                     if (alpha == 1000)
                     {
@@ -88,15 +88,15 @@ public class MyBot : IChessBot
             }
             else
             {
-                if (score.GetEval() <= alpha)
+                if (score.eval <= alpha)
                 {
-                    MoveDouble result = new MoveDouble(move, score.GetEval());
+                    MoveDouble result = new MoveDouble(move, score.eval);
                     order[board.ZobristKey] = new object[] { depth, result };
                     return result;
                 }
-                if (score.GetEval() < beta)
+                if (score.eval < beta)
                 {
-                    beta = score.GetEval();
+                    beta = score.eval;
                     bestMove = new MoveDouble(move, beta);
                     byte bestMoveIndex = i;
                     if (beta == -1000)
@@ -143,8 +143,8 @@ public class MyBot : IChessBot
         int kingDist = Math.Max(Math.Abs(whiteKingSquare.Rank-blackKingSquare.Rank), Math.Abs(blackKingSquare.File-whiteKingSquare.File));
         double whiteKingScore = isEndgame ? -kingDist/16d : ((8 - whiteKingSquare.Rank) / 16d + ((whiteKingSquare.File == 6 || whiteKingSquare.File == 2) ? 0.5 : 0));
         double blackKingScore = isEndgame ? -kingDist/16d : (-(8 - blackKingSquare.Rank) / 16d + ((blackKingSquare.File == 6 || blackKingSquare.File == 2) ? 0.5 : 0));
-        white += -undevelopedWhitePieces / 5d + whiteCenterPawns / 4d + whiteKingScore;
-        black += -undevelopedBlackPieces / 5d + blackCenterPawns / 4d + blackKingScore;
+        white += -undevelopedWhitePieces / 6d + whiteCenterPawns / 4d + whiteKingScore;
+        black += -undevelopedBlackPieces / 6d + blackCenterPawns / 4d + blackKingScore;
         double eval = (white - black);
         return eval;
     }
@@ -164,16 +164,12 @@ public class MyBot : IChessBot
 
 class MoveDouble
 {
-    Move move;
-    double eval;
+    public Move move { get; }
+    public double eval { get; }
 
     public MoveDouble(Move lastMove, double v)
     {
         move = lastMove;
         eval = v;
     }
-
-    public Move GetMove() { return move; }
-
-    public double GetEval() { return eval; }
 }
