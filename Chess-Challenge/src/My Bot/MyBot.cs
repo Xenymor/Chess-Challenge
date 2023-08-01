@@ -1,6 +1,7 @@
 ﻿using ChessChallenge.API;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 public class MyBot : IChessBot
 {
@@ -9,7 +10,7 @@ public class MyBot : IChessBot
     private const ulong CENTER = 0x1818000000;
     Board board;
     const int depth = 20;
-    Dictionary<ulong, byte> order;
+    Dictionary<ulong, object[]> order;
     int moveEstimate = 200;
 
     public Move Think(Board board, Timer timer)
@@ -22,13 +23,14 @@ public class MyBot : IChessBot
             movesRemaining = moveEstimate - gameLength;
         }
         double timeForMove = timer.MillisecondsRemaining / movesRemaining;
-        order = new Dictionary<ulong, byte>();
+        order = new Dictionary<ulong, object[]>();
         this.board = board;
         MoveDouble bestMove = new MoveDouble(new Move(), double.NaN);
         int depthCalculated = 0;
-        for (int i = 0; i < depth; i++)
+        for (byte i = 1; i < depth; i++)
         {
             bestMove = alphaBeta(double.MinValue, double.MaxValue, i);
+            Console.WriteLine("-- MyBot: " + bestMove.GetEval() + "; Move: " + bestMove.GetMove() + "; depth: " + i);
             if (timer.MillisecondsElapsedThisTurn >= timeForMove)
             {
                 depthCalculated = i;
@@ -39,44 +41,47 @@ public class MyBot : IChessBot
         return bestMove.GetMove();
     }
 
-    private MoveDouble alphaBeta(double alpha, double beta, int depth)
+    private MoveDouble alphaBeta(double alpha, double beta, byte depth)
     {
         if (depth <= 0 || board.IsDraw() || board.IsInCheckmate())
         {
             return new MoveDouble(new Move(), EvaluatePosition());
         }
+        if (order.TryGetValue(board.ZobristKey, out object[] saved))
+        {
+            if (depth <= (byte)saved[0])
+            {
+                return (MoveDouble)saved[1];
+            }
+        }
+
         Move[] moves = board.GetLegalMoves();
         if (moves.Length == 0)
         {
             return new MoveDouble(new Move(), EvaluatePosition());
         }
-        if (order.TryGetValue(board.ZobristKey, out byte index))
-        {
-            (moves[index], moves[0]) = (moves[0], moves[index]);
-        }
         MoveDouble bestMove = new MoveDouble(new Move(), !board.IsWhiteToMove ? double.MaxValue : double.MinValue);
-        byte bestMoveIndex = 0;
         for (byte i = 0; i < moves.Length; i++)
         {
             Move move = moves[i];
             board.MakeMove(move);
-            MoveDouble score = alphaBeta(alpha, beta, depth - 1);
+            MoveDouble score = alphaBeta(alpha, beta, (byte) (depth - 1));
             board.UndoMove(move);
             if (board.IsWhiteToMove)
             {
                 if (score.GetEval() >= beta)
                 {
-                    order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
-                    return new MoveDouble(move, score.GetEval());
+                    MoveDouble result = new MoveDouble(move, score.GetEval());
+                    order[board.ZobristKey] = new object[] {depth, result};
+                    return result;
                 }
                 if (score.GetEval() > alpha)
                 {
                     alpha = score.GetEval();
                     bestMove = new MoveDouble(move, alpha);
-                    bestMoveIndex = i;
                     if (alpha == 1000)
                     {
-                        order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
+                        order[board.ZobristKey] = new object[] { depth, bestMove };
                         return bestMove;
                     }
                 }
@@ -85,24 +90,24 @@ public class MyBot : IChessBot
             {
                 if (score.GetEval() <= alpha)
                 {
-                    order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
-                    return new MoveDouble(move, score.GetEval());
+                    MoveDouble result = new MoveDouble(move, score.GetEval());
+                    order[board.ZobristKey] = new object[] { depth, result };
+                    return result;
                 }
                 if (score.GetEval() < beta)
                 {
                     beta = score.GetEval();
                     bestMove = new MoveDouble(move, beta);
-                    bestMoveIndex = i;
+                    byte bestMoveIndex = i;
                     if (beta == -1000)
                     {
-                        order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
+                        order[board.ZobristKey] = new object[] { depth, bestMove };
                         return bestMove;
                     }
                 }
             }
         }
-        bestMoveIndex = (byte)((bestMoveIndex == index) ? 0 : (bestMoveIndex == 0) ? index : bestMoveIndex);
-        order[board.ZobristKey] = bestMoveIndex;
+        order[board.ZobristKey] = new object[] { depth, bestMove };
         return bestMove;
     }
 
@@ -135,8 +140,9 @@ public class MyBot : IChessBot
         int blackCenterPawns = isEndgame ? 0 : NumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, false) & CENTER);
         Square whiteKingSquare = board.GetKingSquare(true);
         Square blackKingSquare = board.GetKingSquare(false);
-        double whiteKingScore = isEndgame ? -(8 - whiteKingSquare.Rank) / 8d : (+(8 - whiteKingSquare.Rank) / 8d + (isEndgame ? ((whiteKingSquare.File == 6 || whiteKingSquare.File == 2) ? 0.5 : 0) : 0));
-        double blackKingScore = isEndgame ? +(8 - blackKingSquare.Rank) / 8d : (-(8 - blackKingSquare.Rank) / 8d + (isEndgame ? ((blackKingSquare.File == 6 || blackKingSquare.File == 2) ? 0.5 : 0) : 0));
+        int kingDist = Math.Max(Math.Abs(whiteKingSquare.Rank-blackKingSquare.Rank), Math.Abs(blackKingSquare.File-whiteKingSquare.File));
+        double whiteKingScore = isEndgame ? -kingDist/16d : ((8 - whiteKingSquare.Rank) / 16d + ((whiteKingSquare.File == 6 || whiteKingSquare.File == 2) ? 0.5 : 0));
+        double blackKingScore = isEndgame ? -kingDist/16d : (-(8 - blackKingSquare.Rank) / 16d + ((blackKingSquare.File == 6 || blackKingSquare.File == 2) ? 0.5 : 0));
         white += -undevelopedWhitePieces / 5d + whiteCenterPawns / 4d + whiteKingScore;
         black += -undevelopedBlackPieces / 5d + blackCenterPawns / 4d + blackKingScore;
         double eval = (white - black);
