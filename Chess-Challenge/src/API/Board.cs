@@ -170,11 +170,15 @@ namespace ChessChallenge.API
 		/// efficient with memory by allocating moves on the stack rather than the heap.
         /// </summary>
         public void GetLegalMovesNonAlloc(ref Span<Move> moveList, bool capturesOnly = false)
-        {
-            bool includeQuietMoves = !capturesOnly;
-            moveGen.GenerateMoves(ref moveList, board, includeQuietMoves);
-            hasCachedMoveCount = true;
-            cachedMoveCount = moveList.Length;
+		{
+			bool includeQuietMoves = !capturesOnly;
+			moveGen.GenerateMoves(ref moveList, board, includeQuietMoves);
+
+			if (!capturesOnly)
+			{
+				hasCachedMoveCount = true;
+				cachedMoveCount = moveList.Length;
+			}
         }
 
 
