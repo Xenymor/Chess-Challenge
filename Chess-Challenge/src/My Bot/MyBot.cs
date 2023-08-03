@@ -6,6 +6,7 @@ using System.Reflection;
 
 public class MyBot : IChessBot
 {
+    private const int CHECKMATE_SCORE = 100_000;
     Board board;
     int depth = 20;
     Dictionary<ulong, byte> order = new Dictionary<ulong, byte>();
@@ -30,7 +31,7 @@ public class MyBot : IChessBot
         this.board = board;
         MoveInt bestMove = new MoveInt(new Move(), int.MinValue);
         int depthCalculated = 0;
-        for (int i = 0; i < depth; i++)
+        for (int i = 1; i < depth; i++)
         {
             bestMove = alphaBeta(int.MinValue, int.MaxValue, i);
             if (timer.MillisecondsElapsedThisTurn >= timeForMove)
@@ -72,7 +73,7 @@ public class MyBot : IChessBot
                     alpha = score.GetEval();
                     bestMove = new MoveInt(move, alpha);
                     bestMoveIndex = i;
-                    if (alpha == 1000)
+                    if (alpha == CHECKMATE_SCORE)
                     {
                         order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
                         return bestMove;
@@ -91,7 +92,7 @@ public class MyBot : IChessBot
                     beta = score.GetEval();
                     bestMove = new MoveInt(move, beta);
                     bestMoveIndex = i;
-                    if (beta == -1000)
+                    if (beta == -CHECKMATE_SCORE)
                     {
                         order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
                         return bestMove;
@@ -115,7 +116,7 @@ public class MyBot : IChessBot
     {
         if (board.IsInCheckmate())
         {
-            return 1000 * (board.IsWhiteToMove ? -1 : 1);
+            return CHECKMATE_SCORE * (board.IsWhiteToMove ? -1 : 1);
         }
         if (board.IsDraw())
         {
@@ -142,7 +143,7 @@ public class MyBot : IChessBot
             eg = -eg;
         }
 
-        return (mg * phase + eg * (24 - phase)) / 24;
+        return (mg * phase + eg * (24 - phase)) / 24 + rand.Next(-2, 2);
     }
 }
 
