@@ -1,4 +1,4 @@
-﻿using Chess_Challenge.src.Opponents;
+﻿using Chess_Challenge.src.Tier2;
 using ChessChallenge.Chess;
 using ChessChallenge.Example;
 using Raylib_cs;
@@ -98,7 +98,7 @@ namespace ChessChallenge.Application
             bool isGameWithHuman = whiteType is PlayerType.Human || blackType is PlayerType.Human;
             int fenIndex = isGameWithHuman ? 0 : botMatchGameIndex / 2;
             board.LoadPosition(botMatchStartFens[fenIndex]);
-            //board.LoadPosition("r3kbnr/pp2pp2/2p5/2qpPQ1p/5p2/1PP2P2/P2BP1PP/R3KB1R w Kkq - 5 20");
+            //TODO board.LoadPosition("4r3/3R4/1kp3rp/1p2p3/4P3/1R4P1/2P3K1/8 b - - 17 54");
 
             // Player Setup
             PlayerWhite = CreatePlayer(whiteType);

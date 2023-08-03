@@ -1,17 +1,20 @@
 ﻿using ChessChallenge.API;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 public class MyBot : IChessBot
 {
-    private const ulong FIRST_RANK = 0xFF;
-    private const ulong LAST_RANK = 18374686479671623680;
-    private const ulong CENTER = 0x1818000000;
     Board board;
-    const int depth = 20;
-    Dictionary<ulong, object[]> order = new Dictionary<ulong, object[]>();
+    int depth = 20;
+    Dictionary<ulong, byte> order = new Dictionary<ulong, byte>();
     int moveEstimate = 200;
+    Random rand = new Random();
+    int[] pieceVal = { 0, 100, 310, 330, 500, 1000, 10000 };
+    int[] piecePhase = { 0, 0, 1, 1, 2, 4, 0 };
+    ulong[] psts = { 657614902731556116, 420894446315227099, 384592972471695068, 312245244820264086, 364876803783607569, 366006824779723922, 366006826859316500, 786039115310605588, 421220596516513823, 366011295806342421, 366006826859316436, 366006896669578452, 162218943720801556, 440575073001255824, 657087419459913430, 402634039558223453, 347425219986941203, 365698755348489557, 311382605788951956, 147850316371514514, 329107007234708689, 402598430990222677, 402611905376114006, 329415149680141460, 257053881053295759, 291134268204721362, 492947507967247313, 367159395376767958, 384021229732455700, 384307098409076181, 402035762391246293, 328847661003244824, 365712019230110867, 366002427738801364, 384307168185238804, 347996828560606484, 329692156834174227, 365439338182165780, 386018218798040211, 456959123538409047, 347157285952386452, 365711880701965780, 365997890021704981, 221896035722130452, 384289231362147538, 384307167128540502, 366006826859320596, 366006826876093716, 366002360093332756, 366006824694793492, 347992428333053139, 457508666683233428, 329723156783776785, 329401687190893908, 366002356855326100, 366288301819245844, 329978030930875600, 420621693221156179, 422042614449657239, 384602117564867863, 419505151144195476, 366274972473194070, 329406075454444949, 275354286769374224, 366855645423297932, 329991151972070674, 311105941360174354, 256772197720318995, 365993560693875923, 258219435335676691, 383730812414424149, 384601907111998612, 401758895947998613, 420612834953622999, 402607438610388375, 329978099633296596, 67159620133902 };
+
 
     public Move Think(Board board, Timer timer)
     {
@@ -23,152 +26,138 @@ public class MyBot : IChessBot
             movesRemaining = moveEstimate - gameLength;
         }
         double timeForMove = timer.MillisecondsRemaining / movesRemaining;
-        order = new Dictionary<ulong, object[]>();
+        //order = new Dictionary<ulong, byte>();
         this.board = board;
-        MoveDouble bestMove = new MoveDouble(new Move(), double.NaN);
+        MoveInt bestMove = new MoveInt(new Move(), int.MinValue);
         int depthCalculated = 0;
-        for (byte i = 1; i < depth; i++)
+        for (int i = 0; i < depth; i++)
         {
-            bestMove = alphaBeta(double.MinValue, double.MaxValue, i);
-            //Console.WriteLine("-- MyBot: " + bestMove.eval + "; Move: " + bestMove.move + "; depth: " + i);
+            bestMove = alphaBeta(int.MinValue, int.MaxValue, i);
             if (timer.MillisecondsElapsedThisTurn >= timeForMove)
             {
                 depthCalculated = i;
                 break;
             }
         }
-        Console.WriteLine("MyBot: " + bestMove.eval + "; depth: " + depthCalculated);
-        return bestMove.move;
+        Console.WriteLine("MyBot: " + bestMove.GetEval()/100d + "; depth: " + depthCalculated);
+        return bestMove.GetMove();
     }
 
-    private MoveDouble alphaBeta(double alpha, double beta, byte depth)
+    private MoveInt alphaBeta(int alpha, int beta, int depth)
     {
         if (depth <= 0 || board.IsDraw() || board.IsInCheckmate())
-        {
-            return new MoveDouble(new Move(), EvaluatePosition());
-        }
-        if (order.TryGetValue(board.ZobristKey, out object[] saved))
-        {
-            if (depth <= (byte)saved[0])
-            {
-                return (MoveDouble)saved[1];
-            }
-        }
-
+            return new MoveInt(new Move(), Evaluate());
         Move[] moves = board.GetLegalMoves();
         if (moves.Length == 0)
-        {
-            return new MoveDouble(new Move(), EvaluatePosition());
-        }
-        MoveDouble bestMove = new MoveDouble(new Move(), !board.IsWhiteToMove ? double.MaxValue : double.MinValue);
+            return new MoveInt(new Move(), Evaluate());
+        if (order.TryGetValue(board.ZobristKey, out byte index))
+            (moves[index], moves[0]) = (moves[0], moves[index]);
+        MoveInt bestMove = new MoveInt(new Move(), !board.IsWhiteToMove ? int.MaxValue : int.MinValue);
+        byte bestMoveIndex = 0;
         for (byte i = 0; i < moves.Length; i++)
         {
             Move move = moves[i];
             board.MakeMove(move);
-            MoveDouble score = alphaBeta(alpha, beta, (byte) (depth - 1));
+            MoveInt score = alphaBeta(alpha, beta, depth - 1);
             board.UndoMove(move);
             if (board.IsWhiteToMove)
             {
-                if (score.eval >= beta)
+                if (score.GetEval() >= beta)
                 {
-                    MoveDouble result = new MoveDouble(move, score.eval);
-                    order[board.ZobristKey] = new object[] {depth, result};
-                    return result;
+                    order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
+                    return new MoveInt(move, score.GetEval());
                 }
-                if (score.eval > alpha)
+                if (score.GetEval() > alpha)
                 {
-                    alpha = score.eval;
-                    bestMove = new MoveDouble(move, alpha);
+                    alpha = score.GetEval();
+                    bestMove = new MoveInt(move, alpha);
+                    bestMoveIndex = i;
                     if (alpha == 1000)
                     {
-                        order[board.ZobristKey] = new object[] { depth, bestMove };
+                        order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
                         return bestMove;
                     }
                 }
             }
             else
             {
-                if (score.eval <= alpha)
+                if (score.GetEval() <= alpha)
                 {
-                    MoveDouble result = new MoveDouble(move, score.eval);
-                    order[board.ZobristKey] = new object[] { depth, result };
-                    return result;
+                    order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
+                    return new MoveInt(move, score.GetEval());
                 }
-                if (score.eval < beta)
+                if (score.GetEval() < beta)
                 {
-                    beta = score.eval;
-                    bestMove = new MoveDouble(move, beta);
+                    beta = score.GetEval();
+                    bestMove = new MoveInt(move, beta);
+                    bestMoveIndex = i;
                     if (beta == -1000)
                     {
-                        order[board.ZobristKey] = new object[] { depth, bestMove };
+                        order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
                         return bestMove;
                     }
                 }
             }
         }
-        order[board.ZobristKey] = new object[] { depth, bestMove };
+        bestMoveIndex = (byte)((bestMoveIndex == index) ? 0 : (bestMoveIndex == 0) ? index : bestMoveIndex);
+        order[board.ZobristKey] = bestMoveIndex;
         return bestMove;
     }
 
-    private double EvaluatePosition()
+
+
+    public int getPstVal(int psq)
+    {
+        return (int)(((psts[psq / 10] >> (6 * (psq % 10))) & 63) - 20) * 8;
+    }
+
+    public int Evaluate()
     {
         if (board.IsInCheckmate())
         {
-            return !board.IsWhiteToMove ? 1000 : -1000;
+            return 1000 * (board.IsWhiteToMove ? -1 : 1);
         }
-        else if (board.IsDraw())
+        if (board.IsDraw())
         {
             return 0;
         }
+        int mg = 0, eg = 0, phase = 0;
 
-        PieceList[] pls = board.GetAllPieceLists();
-        double white = pls[0].Count
-            + pls[1].Count * 3
-            + pls[2].Count * 3.5
-            + pls[3].Count * 5
-            + pls[4].Count * 9;
-        double black = pls[6].Count
-            + pls[7].Count * 3
-            + pls[8].Count * 3.5
-            + pls[9].Count * 5
-            + pls[10].Count * 9;
-        bool isEndgame = (white < 13) && (black < 13);
-        int undevelopedWhitePieces = NumberOfSetBits(getPiecesOnFirstRank(true));
-        int undevelopedBlackPieces = NumberOfSetBits(getPiecesOnFirstRank(false));
-        int whiteCenterPawns = isEndgame ? 0 : NumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, true) & CENTER);
-        int blackCenterPawns = isEndgame ? 0 : NumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, false) & CENTER);
-        Square whiteKingSquare = board.GetKingSquare(true);
-        Square blackKingSquare = board.GetKingSquare(false);
-        int kingDist = Math.Max(Math.Abs(whiteKingSquare.Rank-blackKingSquare.Rank), Math.Abs(blackKingSquare.File-whiteKingSquare.File));
-        double whiteKingScore = isEndgame ? -kingDist/16d : ((8 - whiteKingSquare.Rank) / 16d + ((whiteKingSquare.File == 6 || whiteKingSquare.File == 2) ? 0.5 : 0));
-        double blackKingScore = isEndgame ? -kingDist/16d : (-(8 - blackKingSquare.Rank) / 16d + ((blackKingSquare.File == 6 || blackKingSquare.File == 2) ? 0.5 : 0));
-        white += -undevelopedWhitePieces / 6d + whiteCenterPawns / 4d + whiteKingScore;
-        black += -undevelopedBlackPieces / 6d + blackCenterPawns / 4d + blackKingScore;
-        double eval = (white - black);
-        return eval;
-    }
+        foreach (bool stm in new[] { true, false })
+        {
+            for (var p = PieceType.Pawn; p <= PieceType.King; p++)
+            {
+                int piece = (int)p, ind;
+                ulong mask = board.GetPieceBitboard(p, stm);
+                while (mask != 0)
+                {
+                    phase += piecePhase[piece];
+                    ind = 128 * (piece - 1) + BitboardHelper.ClearAndGetIndexOfLSB(ref mask) ^ (stm ? 56 : 0);
+                    mg += getPstVal(ind) + pieceVal[piece];
+                    eg += getPstVal(ind + 64) + pieceVal[piece];
+                }
+            }
 
-    private ulong getPiecesOnFirstRank(bool isWhite)
-    {
-        return ((isWhite ? board.WhitePiecesBitboard : board.BlackPiecesBitboard) ^ board.GetPieceBitboard(PieceType.King, isWhite) ^ board.GetPieceBitboard(PieceType.Pawn, isWhite) ^ board.GetPieceBitboard(PieceType.Rook, isWhite) ^ board.GetPieceBitboard(PieceType.Queen, isWhite)) & (isWhite ? FIRST_RANK : LAST_RANK);
-    }
+            mg = -mg;
+            eg = -eg;
+        }
 
-    static int NumberOfSetBits(ulong i)
-    {
-        i = i - ((i >> 1) & 0x5555555555555555UL);
-        i = (i & 0x3333333333333333UL) + ((i >> 2) & 0x3333333333333333UL);
-        return (int)(unchecked(((i + (i >> 4)) & 0xF0F0F0F0F0F0F0FUL) * 0x101010101010101UL) >> 56);
+        return (mg * phase + eg * (24 - phase)) / 24;
     }
 }
 
-class MoveDouble
+class MoveInt
 {
-    public Move move { get; }
-    public double eval { get; }
+    Move move;
+    int eval;
 
-    public MoveDouble(Move lastMove, double v)
+    public MoveInt(Move lastMove, int v)
     {
         move = lastMove;
         eval = v;
     }
+
+    public Move GetMove() { return move; }
+
+    public int GetEval() { return eval; }
 }

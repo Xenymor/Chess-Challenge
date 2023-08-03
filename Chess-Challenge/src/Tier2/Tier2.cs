@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Chess_Challenge.src.Opponents
+namespace Chess_Challenge.src.Tier2
 {
-    public class Tier2 : IChessBot
+    internal class Tier2 : IChessBot
     {
         Move bestmoveRoot = Move.NullMove;
 
@@ -162,7 +162,7 @@ namespace Chess_Challenge.src.Opponents
             // https://www.chessprogramming.org/Iterative_Deepening
             for (int depth = 1; depth <= 50; depth++)
             {
-                _ = Search(board, timer, -30000, 30000, depth, 0);
+                int score = Search(board, timer, -30000, 30000, depth, 0);
 
                 // Out of time
                 if (timer.MillisecondsElapsedThisTurn >= timer.MillisecondsRemaining / 30)
