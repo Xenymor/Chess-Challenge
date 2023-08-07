@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace ChessChallenge.Example
 {
-    internal class EvilBot : IChessBot
+    public class EvilBot : IChessBot
     {
         private const int CHECKMATE_SCORE = 100_000;
         Board board;
@@ -30,21 +30,14 @@ namespace ChessChallenge.Example
             this.board = board;
             order = new Dictionary<ulong, byte>();
             MoveInt bestMove = new MoveInt(new Move(), int.MinValue);
-            int depthCalculated = 0;
-            bool broke = false;
             for (int i = 1; i < depth; i++)
             {
                 bestMove = alphaBeta(int.MinValue, int.MaxValue, i, true);
                 if (timer.MillisecondsElapsedThisTurn >= timeForMove)
                 {
-                    depthCalculated = i;
-                    broke = true;
                     break;
                 }
             }
-            if (!broke)
-                depthCalculated = depth;
-            Console.WriteLine("MyBot: " + bestMove.GetEval() / 100d + "; depth: " + depthCalculated);
             return bestMove.GetMove();
         }
 

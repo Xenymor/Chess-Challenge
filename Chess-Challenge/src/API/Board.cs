@@ -8,7 +8,7 @@ namespace ChessChallenge.API
 
     public sealed class Board
     {
-        readonly Chess.Board board;
+        public Chess.Board board;
         readonly APIMoveGen moveGen;
         readonly RepetitionTable repetitionTable;
 
