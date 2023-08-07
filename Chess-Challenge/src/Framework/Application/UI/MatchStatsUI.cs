@@ -19,9 +19,9 @@ namespace ChessChallenge.Application
                 DrawNextText($"Game {controller.CurrGameNumber} of {controller.TotalGameCount}", headerFontSize, Color.WHITE);
                 startPos.Y += spacingY * 2;
 
-                DrawStats(controller.BotStatsA);
+                DrawStats(ChallengeController.BotStatsA);
                 startPos.Y += spacingY * 2;
-                DrawStats(controller.BotStatsB);
+                DrawStats(ChallengeController.BotStatsB);
 
 
                 void DrawStats(ChallengeController.BotMatchStats stats)

@@ -1,14 +1,12 @@
 ﻿using ChessChallenge.API;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 
 public class MyBot : IChessBot
 {
     private const int CHECKMATE_SCORE = 100_000;
     Board board;
-    int depth = 20;
+    int depth = 40;
     Dictionary<ulong, byte> order = new Dictionary<ulong, byte>();
     int moveEstimate = 200;
     Random rand = new Random();
@@ -27,50 +25,56 @@ public class MyBot : IChessBot
             movesRemaining = moveEstimate - gameLength;
         }
         double timeForMove = timer.MillisecondsRemaining / movesRemaining;
-        //order = new Dictionary<ulong, byte>();
         this.board = board;
+        order = new Dictionary<ulong, byte>();
         MoveInt bestMove = new MoveInt(new Move(), int.MinValue);
         int depthCalculated = 0;
+        bool broke = false;
         for (int i = 1; i < depth; i++)
         {
-            bestMove = alphaBeta(int.MinValue, int.MaxValue, i);
+            bestMove = alphaBeta(int.MinValue, int.MaxValue, i, true);
             if (timer.MillisecondsElapsedThisTurn >= timeForMove)
             {
-                depthCalculated = i;
+                depthCalculated = i; 
+                broke = true;
                 break;
             }
         }
-        Console.WriteLine("MyBot: " + bestMove.GetEval()/100d + "; depth: " + depthCalculated);
-        return bestMove.GetMove();
+        if (!broke)
+            depthCalculated = depth;
+        Console.WriteLine("MyBot: " + bestMove.eval / 100d + "; depth: " + depthCalculated);
+        return bestMove.move;
     }
 
-    private MoveInt alphaBeta(int alpha, int beta, int depth)
+    private MoveInt alphaBeta(int alpha, int beta, int depth, bool isFirstCall)
     {
-        if (depth <= 0 || board.IsDraw() || board.IsInCheckmate())
-            return new MoveInt(new Move(), Evaluate());
+        if (!isFirstCall)
+            if (depth <= 0 || board.IsDraw() || board.IsInCheckmate())
+                return new MoveInt(new Move(), Evaluate());
         Move[] moves = board.GetLegalMoves();
         if (moves.Length == 0)
             return new MoveInt(new Move(), Evaluate());
         if (order.TryGetValue(board.ZobristKey, out byte index))
-            (moves[index], moves[0]) = (moves[0], moves[index]);
+            if (index < moves.Length)
+                (moves[index], moves[0]) = (moves[0], moves[index]);
         MoveInt bestMove = new MoveInt(new Move(), !board.IsWhiteToMove ? int.MaxValue : int.MinValue);
         byte bestMoveIndex = 0;
         for (byte i = 0; i < moves.Length; i++)
         {
             Move move = moves[i];
             board.MakeMove(move);
-            MoveInt score = alphaBeta(alpha, beta, depth - 1);
+            MoveInt score = alphaBeta(alpha, beta, depth - 1, false);
             board.UndoMove(move);
             if (board.IsWhiteToMove)
             {
-                if (score.GetEval() >= beta)
+                if (score.eval >= beta)
                 {
                     order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
-                    return new MoveInt(move, score.GetEval());
+                    return new MoveInt(move, score.eval);
                 }
-                if (score.GetEval() > alpha)
+                if (score.eval > alpha)
                 {
-                    alpha = score.GetEval();
+                    alpha = score.eval;
                     bestMove = new MoveInt(move, alpha);
                     bestMoveIndex = i;
                     if (alpha == CHECKMATE_SCORE)
@@ -82,14 +86,14 @@ public class MyBot : IChessBot
             }
             else
             {
-                if (score.GetEval() <= alpha)
+                if (score.eval <= alpha)
                 {
                     order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
-                    return new MoveInt(move, score.GetEval());
+                    return new MoveInt(move, score.eval);
                 }
-                if (score.GetEval() < beta)
+                if (score.eval < beta)
                 {
-                    beta = score.GetEval();
+                    beta = score.eval;
                     bestMove = new MoveInt(move, beta);
                     bestMoveIndex = i;
                     if (beta == -CHECKMATE_SCORE)
@@ -149,16 +153,12 @@ public class MyBot : IChessBot
 
 class MoveInt
 {
-    Move move;
-    int eval;
+    public Move move { get; }
+    public int eval { get; }
 
     public MoveInt(Move lastMove, int v)
     {
         move = lastMove;
         eval = v;
     }
-
-    public Move GetMove() { return move; }
-
-    public int GetEval() { return eval; }
 }

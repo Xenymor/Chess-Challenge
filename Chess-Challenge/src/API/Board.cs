@@ -170,15 +170,15 @@ namespace ChessChallenge.API
 		/// efficient with memory by allocating moves on the stack rather than the heap.
         /// </summary>
         public void GetLegalMovesNonAlloc(ref Span<Move> moveList, bool capturesOnly = false)
-		{
-			bool includeQuietMoves = !capturesOnly;
-			moveGen.GenerateMoves(ref moveList, board, includeQuietMoves);
+        {
+            bool includeQuietMoves = !capturesOnly;
+            moveGen.GenerateMoves(ref moveList, board, includeQuietMoves);
 
-			if (!capturesOnly)
-			{
-				hasCachedMoveCount = true;
-				cachedMoveCount = moveList.Length;
-			}
+            if (!capturesOnly)
+            {
+                hasCachedMoveCount = true;
+                cachedMoveCount = moveList.Length;
+            }
         }
 
 
@@ -224,7 +224,7 @@ namespace ChessChallenge.API
         /// </summary>
         public bool IsFiftyMoveDraw() => board.currentGameState.fiftyMoveCounter >= 100;
 
-        /// <summary>
+        /// <summary> 
         /// Test if the current position has occurred at least once before on the board.
         /// This includes both positions in the actual game, and positions reached by
         /// making moves while the bot is thinking.

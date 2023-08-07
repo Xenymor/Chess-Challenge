@@ -41,8 +41,8 @@ namespace ChessChallenge.Application
         // Bot match state
         readonly string[] botMatchStartFens;
         int botMatchGameIndex;
-        public BotMatchStats BotStatsA { get; private set; }
-        public BotMatchStats BotStatsB { get; private set; }
+        public static BotMatchStats BotStatsA { get; private set; }
+        public static BotMatchStats BotStatsB { get; private set; }
         bool botAPlaysWhite;
 
 
@@ -98,7 +98,6 @@ namespace ChessChallenge.Application
             bool isGameWithHuman = whiteType is PlayerType.Human || blackType is PlayerType.Human;
             int fenIndex = isGameWithHuman ? 0 : botMatchGameIndex / 2;
             board.LoadPosition(botMatchStartFens[fenIndex]);
-            //TODO board.LoadPosition("4r3/3R4/1kp3rp/1p2p3/4P3/1R4P1/2P3K1/8 b - - 17 54");
 
             // Player Setup
             PlayerWhite = CreatePlayer(whiteType);
