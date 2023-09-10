@@ -29,12 +29,12 @@ public class MyBot : IChessBot
         MoveInt bestMove = new MoveInt(new Move(), int.MinValue);
         int depthCalculated = 0; //#DEBUG
         bool broke = false; //#DEBUG
-        for (int i = 1; i < depth; i++)
+        for (int i = 0; i < depth; i++)
         {
             bestMove = alphaBeta(int.MinValue, int.MaxValue, i, true);
             if (timer.MillisecondsElapsedThisTurn >= timeForMove)
             {
-                depthCalculated = i; //#DEBUG
+                depthCalculated = i+1; //#DEBUG
                 broke = true; //#DEBUG
                 break;
             }
