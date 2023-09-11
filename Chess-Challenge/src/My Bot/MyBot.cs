@@ -118,7 +118,7 @@ public class MyBot : IChessBot
                 }
             }
 
-            mg = -mg;
+            mg = -mg;   
             eg = -eg;
         }
 
