@@ -18,6 +18,8 @@ namespace ChessChallenge.Application
 
                 DrawNextText($"Game {controller.CurrGameNumber} of {controller.TotalGameCount}", headerFontSize, Color.WHITE);
                 startPos.Y += spacingY * 2;
+                DrawNextText("Elo Difference: " + MenuUI.CalculateEloDifference(), regularFontSize, Color.WHITE);
+                startPos.Y += spacingY * 2;
 
                 DrawStats(ChallengeController.BotStatsA);
                 startPos.Y += spacingY * 2;

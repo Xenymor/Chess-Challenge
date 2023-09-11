@@ -93,7 +93,7 @@ namespace ChessChallenge.Application
             }
         }
 
-        private static int CalculateEloDifference()
+        public static int CalculateEloDifference()
         {
             double wins = ChallengeController.BotStatsA.NumWins;
             double draws = ChallengeController.BotStatsA.NumDraws;
