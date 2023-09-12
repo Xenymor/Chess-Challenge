@@ -45,22 +45,51 @@ public class MyBot : IChessBot
         return bestRootMove;
     }
 
+    private int GetScore(Move move)
+    {
+        if (move.IsCapture)
+        {
+            return (move.CapturePieceType - move.MovePieceType) * 100;
+        }
+        else
+        {
+            return (int)move.MovePieceType;
+        }
+    }
+
     private int alphaBeta(int alpha, int beta, int depth, bool isFirstCall)
     {
         if (!isFirstCall)
-            if (depth <= 0 || board.IsDraw() || board.IsInCheckmate())
-                return Evaluate();
-        Move[] moves = board.GetLegalMoves();
+            if (board.IsDraw() || board.IsInCheckmate())
+                return Evaluate(depth);
+        Move[] moves = board.GetLegalMoves(depth <= 0);
         if (moves.Length == 0)
-            return Evaluate();
-        if (order.TryGetValue(board.ZobristKey, out byte index))
-            if (index < moves.Length)
-                (moves[index], moves[0]) = (moves[0], moves[index]);
+            return Evaluate(depth);
         Move bestMove = new Move();
         int bestScore = -300_000;
         byte bestMoveIndex = 0;
+        if (depth <= 0)
+        {
+            bestScore = Evaluate(depth);
+            if (bestScore >= beta) return bestScore;
+            alpha = Math.Max(alpha, bestScore);
+        }
+        int[] scores = new int[moves.Length];
+        byte indexByte = 0;
+        int index;
+        index = !order.TryGetValue(board.ZobristKey, out indexByte) ?  -1 : indexByte;
+        for (int i = 0; i < scores.Length; i++)
+        {
+            Move move = moves[i];
+            scores[i] = (i == index) ? 1_000_000 : (move.IsCapture ? 100 * (move.CapturePieceType - move.MovePieceType) : (int)move.MovePieceType);
+        }
         for (byte i = 0; i < moves.Length; i++)
         {
+            for (int j = i + 1; j < moves.Length; j++)
+            {
+                if (scores[j] > scores[i])
+                    (scores[i], scores[j], moves[i], moves[j]) = (scores[j], scores[i], moves[j], moves[i]);
+            }
             Move move = moves[i];
             board.MakeMove(move);
             int score = -alphaBeta(-beta, -alpha, depth - 1, false);
@@ -101,11 +130,11 @@ public class MyBot : IChessBot
         return (int)(((psts[psq / 10] >> (6 * (psq % 10))) & 63) - 20) * 8;
     }
 
-    public int Evaluate()
+    public int Evaluate(int depthLeft)
     {
         if (board.IsInCheckmate())
         {
-            return CHECKMATE_SCORE * -1;
+            return CHECKMATE_SCORE * -1 + depthLeft;
         }
         if (board.IsDraw())
         {

@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace ChessChallenge.EvilBot3_4
+namespace ChessChallenge.EvilBot4_1
 {
     //650 Elo above EvilBot2
     public class EvilBot : IChessBot
@@ -43,7 +43,7 @@ namespace ChessChallenge.EvilBot3_4
             }
             if (!broke) //#DEBUG
                 depthCalculated = depth; //#DEBUG
-            Console.WriteLine("MyBot: " + bestMove.eval / 100d + "; depth: " + depthCalculated); //#DEBUG
+            //Console.WriteLine("MyBot: " + bestMove.eval / 100d + "; depth: " + depthCalculated); //#DEBUG
             return bestMove.move;
         }
 
