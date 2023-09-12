@@ -8,7 +8,7 @@ namespace ChessChallenge.EvilBot3_4
     public class EvilBot : IChessBot
     {
         private const int CHECKMATE_SCORE = 100_000;
-        public static Board board;
+        public Board board;
         int depth = 40;
         Dictionary<ulong, byte> order = new Dictionary<ulong, byte>();
         int moveEstimate = 200;
@@ -26,7 +26,7 @@ namespace ChessChallenge.EvilBot3_4
                 movesRemaining = moveEstimate - gameLength;
             }
             double timeForMove = timer.MillisecondsRemaining / movesRemaining;
-            MyBot.board = board;
+            this.board = board;
             order = new Dictionary<ulong, byte>();
             MoveInt bestMove = new MoveInt(new Move(), int.MinValue);
             int depthCalculated = 0; //#DEBUG
