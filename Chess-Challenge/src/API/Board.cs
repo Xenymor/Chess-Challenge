@@ -96,8 +96,9 @@ namespace ChessChallenge.API
                 repetitionTable.TryPop();
                 board.UndoMove(new Chess.Move(move.RawValue), inSearch: true);
                 OnPositionChanged();
-            }
-        }
+				depth--;
+			}
+		}
 
         /// <summary>
         /// Try skip the current turn.
