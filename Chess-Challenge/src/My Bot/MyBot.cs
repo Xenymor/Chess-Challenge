@@ -7,7 +7,7 @@ public class MyBot : IChessBot
     private const int CHECKMATE_SCORE = 100_000;
     public Board board;
     const int DEPTH = 40;
-    Dictionary<ulong, byte> order = new Dictionary<ulong, byte>();
+    Dictionary<ulong, ushort> order = new Dictionary<ulong, ushort>();
     int moveEstimate = 200;
     int[] pieceVal = { 0, 100, 310, 330, 500, 1000, 10000 };
     int[] piecePhase = { 0, 0, 1, 1, 2, 4, 0 };
@@ -34,7 +34,7 @@ public class MyBot : IChessBot
         }
         double timeForMove = timer.MillisecondsRemaining / movesRemaining;
         this.board = board;
-        order = new Dictionary<ulong, byte>();
+        order = new Dictionary<ulong, ushort>();
         int depthCalculated = 0; //#DEBUG
         bool broke = false; //#DEBUG
         int eval = int.MinValue;
@@ -66,7 +66,6 @@ public class MyBot : IChessBot
             return Evaluate(depth);
         Move bestMove = new Move();
         int bestScore = -300_000;
-        byte bestMoveIndex = 0;
         if (depth <= 0)
         {
             bestScore = Evaluate(depth);
@@ -74,13 +73,11 @@ public class MyBot : IChessBot
             alpha = Math.Max(alpha, bestScore);
         }
         int[] scores = scorePool[depth+40];
-        byte indexByte;
-        int index;
-        index = !order.TryGetValue(board.ZobristKey, out indexByte) ?  -1 : indexByte;
+        order.TryGetValue(board.ZobristKey, out ushort moveHash);
         for (int i = 0; i < moves.Length; i++)
         {
             Move move = moves[i];
-            scores[i] = (i==index) ? 1_000_000 : (move.IsCapture ? 100 * (move.CapturePieceType - move.MovePieceType + 30) : (int)move.MovePieceType);
+            scores[i] = (move.GetHashCode() == moveHash) ? 1_000_000 : (move.IsCapture ? 100 * (move.CapturePieceType - move.MovePieceType + 30) : (int)move.MovePieceType);
         }
         for (byte i = 0; i < moves.Length; i++)
         {
@@ -95,7 +92,7 @@ public class MyBot : IChessBot
             board.UndoMove(move);
             if (score >= beta)
             {
-                order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
+                order[board.ZobristKey] = move.RawValue;
                 return beta;
             }
             if (score > bestScore)
@@ -103,10 +100,9 @@ public class MyBot : IChessBot
                 bestScore = score;
                 alpha = Math.Max(score, alpha);
                 bestMove = move;
-                bestMoveIndex = i;
                 if (alpha == CHECKMATE_SCORE)
                 {
-                    order[board.ZobristKey] = (byte)(i == 0 ? index : i == index ? 0 : i);
+                    order[board.ZobristKey] = move.RawValue;
                     if (isFirstCall)
                     {
                         bestRootMove = bestMove;
@@ -115,8 +111,7 @@ public class MyBot : IChessBot
                 }
             }
         }
-        bestMoveIndex = (byte)((bestMoveIndex == index) ? 0 : (bestMoveIndex == 0) ? index : bestMoveIndex);
-        order[board.ZobristKey] = bestMoveIndex;
+        order[board.ZobristKey] = bestMove.RawValue;
         if (isFirstCall)
         {
             bestRootMove = bestMove;
