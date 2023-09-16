@@ -20,6 +20,8 @@ namespace ChessChallenge.Application
                 startPos.Y += spacingY * 2;
                 DrawNextText("Elo Difference: " + MenuUI.CalculateEloDifference(), regularFontSize, Color.WHITE);
                 startPos.Y += spacingY * 2;
+                DrawNextText("Error Margin: " + MenuUI.CalculateEloErrorMargin(), regularFontSize, Color.WHITE);
+                startPos.Y += spacingY * 2;
 
                 DrawStats(ChallengeController.BotStatsA);
                 startPos.Y += spacingY * 2;

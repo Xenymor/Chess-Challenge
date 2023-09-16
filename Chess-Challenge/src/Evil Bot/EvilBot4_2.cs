@@ -8,7 +8,7 @@ namespace ChessChallenge.EvilBot4_2
     public class EvilBot : IChessBot
     {
         private const int CHECKMATE_SCORE = 100_000;
-        public static Board board;
+        public Board board;
         int depth = 40;
         Dictionary<ulong, byte> order = new Dictionary<ulong, byte>();
         int moveEstimate = 200;
@@ -27,7 +27,7 @@ namespace ChessChallenge.EvilBot4_2
                 movesRemaining = moveEstimate - gameLength;
             }
             double timeForMove = timer.MillisecondsRemaining / movesRemaining;
-            MyBot.board = board;
+            this.board = board;
             order = new Dictionary<ulong, byte>();
             int depthCalculated = 0; //#DEBUG
             bool broke = false; //#DEBUG
@@ -44,20 +44,8 @@ namespace ChessChallenge.EvilBot4_2
             }
             if (!broke) //#DEBUG
                 depthCalculated = depth; //#DEBUG
-            Console.WriteLine("MyBot: " + eval / 100d + "; depth: " + depthCalculated); //#DEBUG
+            //Console.WriteLine("MyBot: " + eval / 100d + "; depth: " + depthCalculated); //#DEBUG
             return bestRootMove;
-        }
-
-        private int GetScore(Move move)
-        {
-            if (move.IsCapture)
-            {
-                return (move.CapturePieceType - move.MovePieceType) * 100;
-            }
-            else
-            {
-                return (int)move.MovePieceType;
-            }
         }
 
         private int alphaBeta(int alpha, int beta, int depth, bool isFirstCall)
@@ -80,19 +68,8 @@ namespace ChessChallenge.EvilBot4_2
                 if (bestScore >= beta) return bestScore;
                 alpha = Math.Max(alpha, bestScore);
             }
-            /*int[] scores = new int[moves.Length];
-            for (int i = 0; i < scores.Length; i++)
-            {
-                Move move = moves[i];
-                scores[i] = (i == bestMoveIndex) ? 1_000_000 : (move.IsCapture ? move.CapturePieceType - move.MovePieceType : (int)move.MovePieceType);
-            }*/
             for (byte i = 0; i < moves.Length; i++)
             {
-                /*for (int j = i + 1; j < moves.Length; j++)
-                {
-                    if (scores[j] > scores[i])
-                        (scores[i], scores[j], moves[i], moves[j]) = (scores[j], scores[i], moves[j], moves[i]);
-                }*/
                 Move move = moves[i];
                 board.MakeMove(move);
                 int score = -alphaBeta(-beta, -alpha, depth - 1, false);

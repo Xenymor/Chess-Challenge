@@ -108,7 +108,7 @@ namespace ChessChallenge.Application
             return (int)Math.Round(-400 * Math.Log(1d / percentage - 1) / LN10);
         }
 
-        private static double CalculateEloErrorMargin()
+        public static double CalculateEloErrorMargin()
         {
             double wins = ChallengeController.BotStatsA.NumWins;
             double draws = ChallengeController.BotStatsA.NumDraws;
