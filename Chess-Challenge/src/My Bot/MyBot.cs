@@ -27,6 +27,10 @@ public class MyBot : IChessBot
     {
         int gameLength = board.GameMoveHistory.Length;
         int movesRemaining = moveEstimate - gameLength;
+        if (gameLength == 0 || gameLength == 1)
+        {
+            order = new Dictionary<ulong, ushort>();
+        }
         if (movesRemaining <= 0)
         {
             moveEstimate += 50;
