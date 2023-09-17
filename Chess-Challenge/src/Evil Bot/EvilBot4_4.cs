@@ -37,22 +37,14 @@ namespace ChessChallenge.EvilBot4_4
             double timeForMove = timer.MillisecondsRemaining / movesRemaining;
             this.board = board;
             order = new Dictionary<ulong, ushort>();
-            int depthCalculated = 0; //#DEBUG
-            bool broke = false; //#DEBUG
-            int eval = int.MinValue;
             for (int i = 0; i < DEPTH; i++)
             {
-                eval = alphaBeta(int.MinValue + 1, int.MaxValue, i, true);
+                alphaBeta(int.MinValue + 1, int.MaxValue, i, true);
                 if (timer.MillisecondsElapsedThisTurn >= timeForMove)
                 {
-                    depthCalculated = i + 1; //#DEBUG
-                    broke = true; //#DEBUG
                     break;
                 }
             }
-            if (!broke) //#DEBUG
-                depthCalculated = DEPTH; //#DEBUG
-            Console.WriteLine("MyBot: " + eval / 100d + ";\tdepth: " + depthCalculated + ";\tMove: " + gameLength); //#DEBUG
             return bestRootMove;
         }
 
