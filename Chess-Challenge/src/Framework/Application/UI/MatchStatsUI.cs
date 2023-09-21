@@ -5,6 +5,11 @@ namespace ChessChallenge.Application
 {
     public static class MatchStatsUI
     {
+        public static long depthSum1 = 0;
+        public static int movesPlayed1 = 0;
+        public static long depthSum2 = 0;
+        public static int movesPlayed2 = 0;
+
         public static void DrawMatchStats(ChallengeController controller)
         {
             if (controller.PlayerWhite.IsBot && controller.PlayerBlack.IsBot)
@@ -19,13 +24,14 @@ namespace ChessChallenge.Application
                 DrawNextText($"Game {controller.CurrGameNumber} of {controller.TotalGameCount}", headerFontSize, Color.WHITE);
                 startPos.Y += spacingY * 2;
                 DrawNextText("Elo Difference: " + MenuUI.CalculateEloDifference(), regularFontSize, Color.WHITE);
-                startPos.Y += spacingY * 2;
                 DrawNextText("Error Margin: " + MenuUI.CalculateEloErrorMargin(), regularFontSize, Color.WHITE);
                 startPos.Y += spacingY * 2;
 
                 DrawStats(ChallengeController.BotStatsA);
+                DrawNextText("Average depth: " + (movesPlayed1==0 ? 0 : ((float)depthSum1 / movesPlayed1)), regularFontSize, col);
                 startPos.Y += spacingY * 2;
                 DrawStats(ChallengeController.BotStatsB);
+                DrawNextText("Average depth: " + (movesPlayed2 == 0 ? 0 : ((float)depthSum2 / movesPlayed2)), regularFontSize, col);
 
 
                 void DrawStats(ChallengeController.BotMatchStats stats)

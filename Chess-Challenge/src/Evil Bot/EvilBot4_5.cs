@@ -1,4 +1,5 @@
 ﻿using ChessChallenge.API;
+using ChessChallenge.Application;
 using System;
 using System.Collections.Generic;
 
@@ -51,6 +52,8 @@ namespace ChessChallenge.EvilBot4_5
             }
             if (!broke) //#DEBUG
                 depthCalculated = DEPTH; //#DEBUG
+            MatchStatsUI.movesPlayed2++; //#DEBUG
+            MatchStatsUI.depthSum2 += depthCalculated; //#DEBUG
             return bestRootMove;
         }
 

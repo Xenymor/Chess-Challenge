@@ -1,6 +1,5 @@
 ﻿using Chess_Challenge.src.Tier2;
 using ChessChallenge.Chess;
-using ChessChallenge.Example;
 using Raylib_cs;
 using System;
 using System.IO;

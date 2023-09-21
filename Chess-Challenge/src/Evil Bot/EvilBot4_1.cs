@@ -1,5 +1,4 @@
 ﻿using ChessChallenge.API;
-using System;
 using System.Collections.Generic;
 
 namespace ChessChallenge.EvilBot4_1
