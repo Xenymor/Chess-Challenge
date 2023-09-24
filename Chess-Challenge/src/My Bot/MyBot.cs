@@ -1,18 +1,36 @@
 ﻿using ChessChallenge.API;
+using ChessChallenge.Application;
 using System;
-using System.Collections.Generic;
 
 public class MyBot : IChessBot
 {
     private const int CHECKMATE_SCORE = 100_000;
     public Board board;
     const int DEPTH = 40;
-    Dictionary<ulong, ushort> order = new Dictionary<ulong, ushort>();
-    int moveEstimate = 200;
+    const long ENTRIES = 1 << 31 - 1;
     int[] pieceVal = { 0, 100, 310, 330, 500, 1000, 10000 };
     int[] piecePhase = { 0, 0, 1, 1, 2, 4, 0 };
     ulong[] psts = { 657614902731556116, 420894446315227099, 384592972471695068, 312245244820264086, 364876803783607569, 366006824779723922, 366006826859316500, 786039115310605588, 421220596516513823, 366011295806342421, 366006826859316436, 366006896669578452, 162218943720801556, 440575073001255824, 657087419459913430, 402634039558223453, 347425219986941203, 365698755348489557, 311382605788951956, 147850316371514514, 329107007234708689, 402598430990222677, 402611905376114006, 329415149680141460, 257053881053295759, 291134268204721362, 492947507967247313, 367159395376767958, 384021229732455700, 384307098409076181, 402035762391246293, 328847661003244824, 365712019230110867, 366002427738801364, 384307168185238804, 347996828560606484, 329692156834174227, 365439338182165780, 386018218798040211, 456959123538409047, 347157285952386452, 365711880701965780, 365997890021704981, 221896035722130452, 384289231362147538, 384307167128540502, 366006826859320596, 366006826876093716, 366002360093332756, 366006824694793492, 347992428333053139, 457508666683233428, 329723156783776785, 329401687190893908, 366002356855326100, 366288301819245844, 329978030930875600, 420621693221156179, 422042614449657239, 384602117564867863, 419505151144195476, 366274972473194070, 329406075454444949, 275354286769374224, 366855645423297932, 329991151972070674, 311105941360174354, 256772197720318995, 365993560693875923, 258219435335676691, 383730812414424149, 384601907111998612, 401758895947998613, 420612834953622999, 402607438610388375, 329978099633296596, 67159620133902 };
     Move bestRootMove = Move.NullMove;
+    TTEntry[] transTable = new TTEntry[ENTRIES];
+    int returnCounter = 0; //#DEBUG
+    int keyFoundCounter = 0; //#DEBUG
+    int notFoundCounter = 0; //#DEBUG+
+
+    struct TTEntry
+    {
+        public ulong key;
+        public ushort moveRaw;
+        public int depth, eval, flag;
+        public TTEntry(ulong newKey, Move newMove, int newDepth, int newEval, int flag)
+        {
+            key = newKey;
+            moveRaw = newMove.RawValue;
+            depth = newDepth;
+            eval = newEval;
+            this.flag = flag;
+        }
+    }
 
     public MyBot()
     {
@@ -26,40 +44,37 @@ public class MyBot : IChessBot
     public Move Think(Board board, Timer timer)
     {
         int gameLength = board.GameMoveHistory.Length;
-        int movesRemaining = moveEstimate - gameLength;
-        if (gameLength == 0 || gameLength == 1)
-        {
-            order = new Dictionary<ulong, ushort>();
-        }
-        if (movesRemaining <= 0)
-        {
-            moveEstimate += 50;
-            movesRemaining = moveEstimate - gameLength;
-        }
-        double timeForMove = timer.MillisecondsRemaining / movesRemaining;
         this.board = board;
         int depthCalculated = 0; //#DEBUG
         bool broke = false; //#DEBUG
-        int eval = int.MinValue;
+        int lastEval = 0; //#DEBUG
+        int eval; //#DEBUG
         for (int i = 3; i < DEPTH; i++)
         {
-            eval = alphaBeta(int.MinValue + 1, int.MaxValue, i, true);
-            if (timer.MillisecondsElapsedThisTurn >= timeForMove)
+            eval = alphaBeta(int.MinValue + 1, int.MaxValue, i, true, timer);
+            if (timer.MillisecondsElapsedThisTurn >= timer.MillisecondsRemaining/150)
             {
-                depthCalculated = i + 1; //#DEBUG
+                depthCalculated = i; //#DEBUG
                 broke = true; //#DEBUG
                 break;
             }
+            lastEval = eval;
         }
         if (!broke) //#DEBUG
             depthCalculated = DEPTH; //#DEBUG
-        Console.WriteLine("MyBot: " + eval / 100d + ";\tdepth: " + depthCalculated + ";\tMove: " + gameLength); //#DEBUG
-        return bestRootMove;
+        Console.WriteLine("MyBot: " + lastEval / 100d + ";\tdepth: " + depthCalculated + ";\tMove: " + gameLength); //#DEBUG
+        Console.WriteLine("NotFound:" + notFoundCounter + "\tFound: " + keyFoundCounter + "\tReturned: " + returnCounter/(float)notFoundCounter);  //#DEBUG
+        keyFoundCounter = 0;
+        returnCounter = 0;
+        notFoundCounter = 0;
+        MatchStatsUI.depthSum1 += depthCalculated; //#DEBUG
+        MatchStatsUI.movesPlayed1++; //#DEBUG
+        return bestRootMove.IsNull ? board.GetLegalMoves()[0] : bestRootMove;
     }
 
     int[][] scorePool;
 
-    private int alphaBeta(int alpha, int beta, int depth, bool isFirstCall)
+    private int alphaBeta(int alpha, int beta, int depth, bool isFirstCall, Timer timer)
     {
         if (!isFirstCall)
             if (board.IsDraw() || board.IsInCheckmate())
@@ -75,13 +90,33 @@ public class MyBot : IChessBot
             if (bestScore >= beta) return bestScore;
             alpha = Math.Max(alpha, bestScore);
         }
+
+
         int[] scores = scorePool[depth + 40];
-        order.TryGetValue(board.ZobristKey, out ushort moveHash);
+        TTEntry entry = transTable[getIndexFromKey()];
+        if (entry.key == board.ZobristKey) {
+            keyFoundCounter++; //#DEBUG
+            if (entry.depth >= depth && (
+                entry.flag == 3
+            || entry.flag == 2 && entry.eval >= beta
+            || entry.flag == 1 && entry.eval <= alpha
+            )) {
+                returnCounter++; //#DEBUG
+                return entry.eval; //TODO Insta-return Checkmate
+            }
+        } else //#DEBUG
+        { //#DEBUG
+            notFoundCounter++; //#DEBUG
+        } //#DEBUG
+
         for (int i = 0; i < moves.Length; i++)
         {
             Move move = moves[i];
-            scores[i] = (move.GetHashCode() == moveHash) ? 1_000_000 : (move.IsCapture ? 100 * (move.CapturePieceType - move.MovePieceType + 30) : (int)move.MovePieceType);
+            scores[i] = (move.GetHashCode() == entry.moveRaw) ? 1_000_000 : (move.IsCapture ? 100 * (move.CapturePieceType - move.MovePieceType + 30) : (int)move.MovePieceType);
         }
+
+        int originalAlpha = alpha;
+
         for (byte i = 0; i < moves.Length; i++)
         {
             for (int j = i + 1; j < moves.Length; j++)
@@ -89,14 +124,16 @@ public class MyBot : IChessBot
                 if (scores[j] > scores[i])
                     (scores[i], scores[j], moves[i], moves[j]) = (scores[j], scores[i], moves[j], moves[i]);
             }
+
             Move move = moves[i];
             board.MakeMove(move);
-            int score = -alphaBeta(-beta, -alpha, depth - 1, false);
+            int score = -alphaBeta(-beta, -alpha, depth - 1, false, timer);
             board.UndoMove(move);
+
             if (score >= beta)
             {
-                order[board.ZobristKey] = move.RawValue;
-                return beta;
+                bestScore = score;
+                break;
             }
             if (score > bestScore)
             {
@@ -105,16 +142,14 @@ public class MyBot : IChessBot
                 bestMove = move;
                 if (alpha == CHECKMATE_SCORE)
                 {
-                    order[board.ZobristKey] = move.RawValue;
-                    if (isFirstCall)
-                    {
-                        bestRootMove = bestMove;
-                    }
-                    return score;
+                    break;
                 }
             }
         }
-        order[board.ZobristKey] = bestMove.RawValue;
+
+        int flag = bestScore >= beta ? 2 : bestScore > originalAlpha ? 3 : 1;
+        if (depth > 0 && entry.depth < depth)
+            transTable[getIndexFromKey()] = new TTEntry(board.ZobristKey, bestMove, depth, bestScore, flag);
         if (isFirstCall)
         {
             bestRootMove = bestMove;
@@ -122,9 +157,16 @@ public class MyBot : IChessBot
         return bestScore;
     }
 
-    public int getPstVal(int psq)
+    private ulong getIndexFromKey()
     {
-        return (int)(((psts[psq / 10] >> (6 * (psq % 10))) & 63) - 20) * 8;
+        // return board.ZobristKey % ENTRIES;//(board.ZobristKey ^ (board.ZobristKey>>32)) & (ENTRIES - 1);
+        // return (board.ZobristKey ^ (board.ZobristKey >> 22) ^ (board.ZobristKey >> 44)) % ENTRIES;
+        return board.ZobristKey % ENTRIES;
+    }
+
+    public int getPieceSquareTableVal(int pieceSquare)
+    {
+        return (int)(((psts[pieceSquare / 10] >> (6 * (pieceSquare % 10))) & 63) - 20) * 8;
     }
 
     public int Evaluate(int depthLeft)
@@ -150,8 +192,8 @@ public class MyBot : IChessBot
                 {
                     phase += piecePhase[piece];
                     ind = 128 * (piece - 1) + BitboardHelper.ClearAndGetIndexOfLSB(ref mask) ^ (stm ? 56 : 0);
-                    mg += getPstVal(ind) + pieceVal[piece];
-                    eg += getPstVal(ind + 64) + pieceVal[piece];
+                    mg += getPieceSquareTableVal(ind) + pieceVal[piece];
+                    eg += getPieceSquareTableVal(ind + 64) + pieceVal[piece];
                 }
             }
 
