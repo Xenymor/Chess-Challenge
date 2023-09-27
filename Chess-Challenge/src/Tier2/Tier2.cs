@@ -1,4 +1,6 @@
 ﻿using ChessChallenge.API;
+using ChessChallenge.Application;
+using Microsoft.CodeAnalysis;
 using System;
 
 namespace Chess_Challenge.src.Tier2
@@ -156,14 +158,20 @@ namespace Chess_Challenge.src.Tier2
         {
             bestmoveRoot = Move.NullMove;
             // https://www.chessprogramming.org/Iterative_Deepening
+            int calculatedDepth = 0;
             for (int depth = 1; depth <= 50; depth++)
             {
                 int score = Search(board, timer, -30000, 30000, depth, 0);
 
                 // Out of time
                 if (timer.MillisecondsElapsedThisTurn >= timer.MillisecondsRemaining / 30)
+                {
+                    calculatedDepth = depth;
                     break;
+                }
             }
+            MatchStatsUI.depthSum2 += calculatedDepth;
+            MatchStatsUI.movesPlayed2++;
             return bestmoveRoot.IsNull ? board.GetLegalMoves()[0] : bestmoveRoot;
         }
     }

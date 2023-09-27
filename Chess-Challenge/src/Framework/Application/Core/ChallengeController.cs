@@ -98,6 +98,7 @@ namespace ChessChallenge.Application
             bool isGameWithHuman = whiteType is PlayerType.Human || blackType is PlayerType.Human;
             int fenIndex = isGameWithHuman ? 0 : botMatchGameIndex / 2;
             board.LoadPosition(botMatchStartFens[fenIndex]);
+            //board.LoadPosition("8/2r3p1/4Rp2/2p4p/2P3kP/1P6/PK6/8 w - - 0 42");
 
             // Player Setup
             PlayerWhite = CreatePlayer(whiteType);
@@ -211,7 +212,7 @@ namespace ChessChallenge.Application
             return type switch
             {
                 PlayerType.MyBot => new ChessPlayer(new MyBot(), type, GameDurationMilliseconds),
-                PlayerType.EvilBot => new ChessPlayer(new EvilBot4_5.EvilBot(), type, GameDurationMilliseconds),
+                PlayerType.EvilBot => new ChessPlayer(new EvilBot5_1.EvilBot(), type, GameDurationMilliseconds),
                 PlayerType.Tier2 => new ChessPlayer(new Tier2(), type, GameDurationMilliseconds),
                 PlayerType.EvilBot2 => new ChessPlayer(new EvilBot2_2.EvilBot(), type, GameDurationMilliseconds),
                 _ => new ChessPlayer(new HumanPlayer(boardUI), type)
