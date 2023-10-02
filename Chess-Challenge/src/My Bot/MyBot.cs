@@ -1,20 +1,20 @@
 ﻿using ChessChallenge.API;
 using ChessChallenge.Application;
 using System;
-
 public class MyBot : IChessBot
 {
     private const int CHECKMATE_SCORE = 100_000;
     public Board board;
+    const int DEPTH = 40;
     public static ulong ENTRIES = 1 << 24;
     TTEntry[] transpositionTable = new TTEntry[ENTRIES];
+    int moveEstimate = 200;
     int[] pieceVal = { 0, 100, 310, 330, 500, 1000, 10000 };
     int[] piecePhase = { 0, 0, 1, 1, 2, 4, 0 };
     ulong[] psts = { 657614902731556116, 420894446315227099, 384592972471695068, 312245244820264086, 364876803783607569, 366006824779723922, 366006826859316500, 786039115310605588, 421220596516513823, 366011295806342421, 366006826859316436, 366006896669578452, 162218943720801556, 440575073001255824, 657087419459913430, 402634039558223453, 347425219986941203, 365698755348489557, 311382605788951956, 147850316371514514, 329107007234708689, 402598430990222677, 402611905376114006, 329415149680141460, 257053881053295759, 291134268204721362, 492947507967247313, 367159395376767958, 384021229732455700, 384307098409076181, 402035762391246293, 328847661003244824, 365712019230110867, 366002427738801364, 384307168185238804, 347996828560606484, 329692156834174227, 365439338182165780, 386018218798040211, 456959123538409047, 347157285952386452, 365711880701965780, 365997890021704981, 221896035722130452, 384289231362147538, 384307167128540502, 366006826859320596, 366006826876093716, 366002360093332756, 366006824694793492, 347992428333053139, 457508666683233428, 329723156783776785, 329401687190893908, 366002356855326100, 366288301819245844, 329978030930875600, 420621693221156179, 422042614449657239, 384602117564867863, 419505151144195476, 366274972473194070, 329406075454444949, 275354286769374224, 366855645423297932, 329991151972070674, 311105941360174354, 256772197720318995, 365993560693875923, 258219435335676691, 383730812414424149, 384601907111998612, 401758895947998613, 420612834953622999, 402607438610388375, 329978099633296596, 67159620133902 };
     Move bestRootMove = Move.NullMove;
-    int foundCounter; //#DEBUG
-    int notFoundCounter; //#DEBUG
-    int returnCounter; //#DEBUG
+    int foundCounter;
+    int notFoundCounter;
 
     struct TTEntry
     {
@@ -36,7 +36,7 @@ public class MyBot : IChessBot
 
     public MyBot()
     {
-        scorePool = new int[79][];
+        scorePool = new int[80][];
         for (int i = 0; i < scorePool.Length; i++)
         {
             scorePool[i] = new int[270];
@@ -45,46 +45,56 @@ public class MyBot : IChessBot
 
     public Move Think(Board board, Timer timer)
     {
-        foundCounter = 0; //#DEBUG
-        notFoundCounter = 0; //#DEBUG
-        returnCounter = 0; //#DEBUG
+        foundCounter = 0;
+        notFoundCounter = 0;
+        int gameLength = board.GameMoveHistory.Length;
+        int movesRemaining = moveEstimate - gameLength;
+        if (movesRemaining <= 0)
+        {
+            moveEstimate += 50;
+            movesRemaining = moveEstimate - gameLength;
+        }
+        double timeForMove = timer.MillisecondsRemaining / movesRemaining;
         this.board = board;
-        int lastEval = int.MinValue; //#DEBUG
+        int depthCalculated = 3;
+        bool broke = false; //#DEBUG
         int eval = 0;
-        if (transpositionTable[board.ZobristKey % ENTRIES].key == board.ZobristKey)
-            eval = transpositionTable[board.ZobristKey % ENTRIES].eval;
+        TTEntry entry = transpositionTable[board.ZobristKey % ENTRIES];
+        if (entry.key == board.ZobristKey)
+            eval = entry.eval;
         int alpha = eval - 25;
         int beta = eval + 25;
-        int depth = 3;
-        while (depth <= 39) {
-            eval = alphaBeta(alpha, beta, depth, true, timer);
+        while (depthCalculated < DEPTH)
+        {
+            eval = alphaBeta(alpha, beta, depthCalculated, true);
             if (eval <= alpha)
-                alpha -= 50;
+                alpha -= 60;
             else if (eval >= beta)
-                beta += 50;
+                beta += 60;
             else
             {
-                depth++;
+                depthCalculated++;
                 alpha = eval - 25;
                 beta = eval + 25;
             }
-            if (timer.MillisecondsElapsedThisTurn >= timer.MillisecondsRemaining/50)
+            if (timer.MillisecondsElapsedThisTurn >= timeForMove)
             {
-                eval = lastEval; //#DEBUG
+                broke = true; //#DEBUG
                 break;
             }
-            lastEval = eval; //#DEBUG
         }
+        if (!broke) //#DEBUG
+            depthCalculated = DEPTH; //#DEBUG
         MatchStatsUI.movesPlayed1++; //#DEBUG
-        MatchStatsUI.depthSum1 += depth; //#DEBUG
-        Console.WriteLine("MyBot: " + eval / 100f + "\tDepth: " + depth); //#DEBUG
-        Console.WriteLine("MyBot:    NotFound: " + notFoundCounter + "\tFound: " + foundCounter + "\tReturned: " + returnCounter); //#DEBUG
+        MatchStatsUI.depthSum1 += depthCalculated; //#DEBUG
+        Console.WriteLine("MyBot: " + eval / 100f + "\tDepth: " + depthCalculated); //#DEBUG
+        Console.WriteLine("MyBot:    NotFound: " + notFoundCounter + "\tFound: " + foundCounter); //#DEBUG
         return bestRootMove;
     }
 
     int[][] scorePool;
 
-    private int alphaBeta(int alpha, int beta, int depth, bool isFirstCall, Timer timer)
+    private int alphaBeta(int alpha, int beta, int depth, bool isFirstCall)
     {
         if (!isFirstCall)
             if (board.IsDraw() || board.IsInCheckmate())
@@ -102,30 +112,20 @@ public class MyBot : IChessBot
             if (bestScore >= beta) return bestScore;
             alpha = Math.Max(alpha, bestScore);
         }
-        if (depth + 39 < 0 || depth + 39 > scorePool.Length - 1) //#DEBUG
-            Console.WriteLine("Error: Depth: " + depth); //#DEBUG
-        int[] scores = scorePool[depth + 39];
+
+        int[] scores = scorePool[depth + 40];
 
         TTEntry ttEntry = transpositionTable[board.ZobristKey % ENTRIES];
         ushort moveHash;
         if (ttEntry.key == board.ZobristKey)
-        {
-            foundCounter++; //#DEBUG
-            if (!isFirstCall && ttEntry.depth >= depth
-                && ((ttEntry.flag == 1 && ttEntry.eval >= beta)
-                    || (ttEntry.flag == 0 && ttEntry.eval <= alpha) 
-                    || (ttEntry.flag == 2)))
-            {
-                returnCounter++; //#DEBUG
-                return ttEntry.eval;
-            }
             moveHash = ttEntry.move;
-        }
         else
-        {
             moveHash = 0;
+
+        if (moveHash != 0) //#DEBUG
+            foundCounter++; //#DEBUG
+        else //#DEBUG
             notFoundCounter++; //#DEBUG
-        }
 
         for (int i = 0; i < moves.Length; i++)
         {
@@ -133,12 +133,8 @@ public class MyBot : IChessBot
             scores[i] = (move.GetHashCode() == moveHash) ? 1_000_000 : (move.IsCapture ? 100 * (move.CapturePieceType - move.MovePieceType + 30) : (int)move.MovePieceType);
         }
 
-        int originalAlpha = alpha;
         for (byte i = 0; i < moves.Length; i++)
         {
-            if (timer.MillisecondsElapsedThisTurn >= timer.MillisecondsRemaining / 40)
-                return 30000;
-
             for (int j = i + 1; j < moves.Length; j++)
             {
                 if (scores[j] > scores[i])
@@ -147,7 +143,7 @@ public class MyBot : IChessBot
 
             Move move = moves[i];
             board.MakeMove(move);
-            int score = -alphaBeta(-beta, -alpha, depth - 1, false, timer);
+            int score = -alphaBeta(-beta, -alpha, depth - 1, false);
             board.UndoMove(move);
 
             if (score >= beta)
@@ -162,15 +158,18 @@ public class MyBot : IChessBot
                 bestScore = score;
                 alpha = Math.Max(score, alpha);
                 bestMove = move;
-                if (isFirstCall)
-                    bestRootMove = move;
                 if (alpha == CHECKMATE_SCORE)
+                {
                     break;
+                }
             }
         }
-        byte flag = (byte)(bestScore >= beta ? 1 : (bestScore > originalAlpha ? 2 : 0));
-        if (depth >= ttEntry.depth || ttEntry.key != board.ZobristKey)
-            transpositionTable[board.ZobristKey % ENTRIES] = new TTEntry(board.ZobristKey, bestMove.RawValue, bestScore, (byte)depth, flag);
+        // byte flag = bestScore
+        transpositionTable[board.ZobristKey % ENTRIES] = new TTEntry(board.ZobristKey, bestMove.RawValue, bestScore, (byte)depth, 0);
+        if (isFirstCall)
+        {
+            bestRootMove = bestMove;
+        }
         return bestScore;
     }
 
