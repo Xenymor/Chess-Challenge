@@ -110,7 +110,7 @@ namespace ChessChallenge.Chess
             BitBoardUtility.ToggleSquares(ref pieceBitboards[piece], startSquare, targetSquare);
             BitBoardUtility.ToggleSquares(ref colourBitboards[MoveColourIndex], startSquare, targetSquare);
 
-            pieceLists[piece].MovePiece(startSquare, targetSquare);
+           pieceLists[piece].MovePiece(startSquare, targetSquare);
             Square[startSquare] = PieceHelper.None;
             Square[targetSquare] = piece;
         }

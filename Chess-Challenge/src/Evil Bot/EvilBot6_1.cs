@@ -1,7 +1,7 @@
 ﻿using ChessChallenge.API;
 using ChessChallenge.Application;
 using System;
-internal class EvilBot6_1 : IChessBot
+public class EvilBot6_1 : IChessBot
 {
     Move bestRootMove = Move.NullMove;
 
@@ -188,9 +188,9 @@ internal class EvilBot6_1 : IChessBot
                 break;
             }
         }
-        Console.WriteLine("MyBot: " + eval / 100f + ";\tDepth: " + calculatedDepth);
-        MatchStatsUI.depthSum1 += calculatedDepth; //#DEBUG
-        MatchStatsUI.movesPlayed1++; //#DEBUG
+        Console.WriteLine("EvilBot: " + eval / -100f + ";\tDepth: " + calculatedDepth);
+        MatchStatsUI.depthSum2 += calculatedDepth; //#DEBUG
+        MatchStatsUI.movesPlayed2++; //#DEBUG
         return bestRootMove.IsNull ? board.GetLegalMoves()[0] : bestRootMove;
     }
 }

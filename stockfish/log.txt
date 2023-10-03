@@ -1,0 +1,212 @@
+>> debug on
+<< Unknown command: 'debug on'. Type help for more information.
+>> writer.WriteLine("setoption name Debug Log File value log.txt"); // Optional: Output log to a file
+<< Unknown command: 'writer.WriteLine("setoption name Debug Log File value log.txt"); // Optional: Output log to a file'. Type help for more information.
+>> writer.WriteLine("debug on");
+<< Unknown command: 'writer.WriteLine("debug on");'. Type help for more information.
+>> writer.WriteLine("position fen fen-string-goes-here");
+<< Unknown command: 'writer.WriteLine("position fen fen-string-goes-here");'. Type help for more information.
+>> writer.WriteLine("go depth 10");
+<< Unknown command: 'writer.WriteLine("go depth 10");'. Type help for more information.
+>> pos startpos
+<< Unknown command: 'pos startpos'. Type help for more information.
+>> uci
+<< id name Stockfish 16
+<< id author the Stockfish developers (see AUTHORS file)
+<< 
+<< option name Debug Log File type string default 
+<< option name Threads type spin default 1 min 1 max 1024
+<< option name Hash type spin default 16 min 1 max 33554432
+<< option name Clear Hash type button
+<< option name Ponder type check default false
+<< option name MultiPV type spin default 1 min 1 max 500
+<< option name Skill Level type spin default 20 min 0 max 20
+<< option name Move Overhead type spin default 10 min 0 max 5000
+<< option name Slow Mover type spin default 100 min 10 max 1000
+<< option name nodestime type spin default 0 min 0 max 10000
+<< option name UCI_Chess960 type check default false
+<< option name UCI_AnalyseMode type check default false
+<< option name UCI_LimitStrength type check default false
+<< option name UCI_Elo type spin default 1320 min 1320 max 3190
+<< option name UCI_ShowWDL type check default false
+<< option name SyzygyPath type string default <empty>
+<< option name SyzygyProbeDepth type spin default 1 min 1 max 100
+<< option name Syzygy50MoveRule type check default true
+<< option name SyzygyProbeLimit type spin default 7 min 0 max 7
+<< option name Use NNUE type check default true
+<< option name EvalFile type string default nn-5af11540bbfe.nnue
+<< uciok
+>> ucinewgame
+>> pos startpos
+<< Unknown command: 'pos startpos'. Type help for more information.
+>> go movetime 5000
+<< info string NNUE evaluation using nn-5af11540bbfe.nnue enabled
+<< info depth 1 seldepth 1 multipv 1 score cp 2 nodes 20 nps 6666 hashfull 0 tbhits 0 time 3 pv g1f3
+<< info depth 2 seldepth 2 multipv 1 score cp 2 nodes 40 nps 6666 hashfull 0 tbhits 0 time 6 pv g1f3
+<< info depth 3 seldepth 2 multipv 1 score cp 16 nodes 70 nps 7777 hashfull 0 tbhits 0 time 9 pv c2c3
+<< info depth 4 seldepth 2 multipv 1 score cp 29 nodes 101 nps 8416 hashfull 0 tbhits 0 time 12 pv e2e4
+<< info depth 5 seldepth 3 multipv 1 score cp 42 nodes 131 nps 8187 hashfull 0 tbhits 0 time 16 pv e2e4 g8f6
+<< info depth 6 seldepth 4 multipv 1 score cp 59 nodes 489 nps 25736 hashfull 0 tbhits 0 time 19 pv g1f3 d7d5 d2d4
+<< info depth 7 seldepth 6 multipv 1 score cp 31 nodes 1560 nps 65000 hashfull 1 tbhits 0 time 24 pv e2e4 d7d5 e4d5 d8d5 g1f3
+<< info depth 8 seldepth 6 multipv 1 score cp 40 nodes 2105 nps 72586 hashfull 1 tbhits 0 time 29 pv e2e4 d7d5 e4d5 d8d5
+<< info depth 9 seldepth 8 multipv 1 score cp 48 nodes 4500 nps 132352 hashfull 1 tbhits 0 time 34 pv e2e4 e7e5 g1f3 g8f6 f3e5 f6e4 d2d4 b8c6
+<< info depth 10 seldepth 10 multipv 1 score cp 50 nodes 7548 nps 184097 hashfull 2 tbhits 0 time 41 pv e2e4 e7e5 g1f3 g8f6 b1c3 d7d6 d2d4
+<< info depth 11 seldepth 12 multipv 1 score cp 44 nodes 13058 nps 261160 hashfull 3 tbhits 0 time 50 pv e2e4 e7e5 g1f3 g8f6 b1c3 d7d6 d2d4 e5d4 d1d4 b8c6 d4d3 f8e7
+<< info depth 12 seldepth 16 multipv 1 score cp 40 nodes 35836 nps 504732 hashfull 15 tbhits 0 time 71 pv e2e4 e7e5 g1f3 g8f6 d2d4 f6e4 f3e5 e4f6 f1c4 d7d5
+<< info depth 13 seldepth 18 multipv 1 score cp 43 nodes 59384 nps 652571 hashfull 26 tbhits 0 time 91 pv e2e4 e7e5 g1f3 g8f6 d2d4 f6e4 f3e5 d7d5 f1d3 f8b4 c2c3 b4d6
+<< info depth 14 seldepth 19 multipv 1 score cp 48 nodes 73942 nps 697566 hashfull 30 tbhits 0 time 106 pv e2e4 e7e5 g1f3 g8f6 d2d4 f6e4 f1d3 d7d5 f3e5 f8b4 b1d2 e8g8 e1g1 b4d2 c1d2
+<< info depth 15 seldepth 19 multipv 1 score cp 33 nodes 173344 nps 973842 hashfull 69 tbhits 0 time 178 pv e2e4 c7c5 b1c3 b8c6 g1f3 e7e5 f1c4 f8e7 d2d3 d7d6 e1g1 h7h6 h2h3 g8f6 f3h2 e8g8 f2f4 e5f4 c1f4
+<< info depth 16 seldepth 22 multipv 1 score cp 24 nodes 302305 nps 1111415 hashfull 127 tbhits 0 time 272 pv e2e4 e7e5 g1f3 b8c6 f1b5 a7a6 b5a4 g8f6 e1g1 f6e4 d2d4 b7b5 a4b3 d7d5 f1e1 f8e7 d4e5 c8e6 c1e3
+<< info depth 17 seldepth 24 multipv 1 score cp 28 nodes 358119 nps 1129712 hashfull 155 tbhits 0 time 317 pv e2e4 e7e5 g1f3 b8c6 f1b5 a7a6 b5a4 g8f6 e1g1 f6e4 d2d4 b7b5 a4b3 d7d5 d4e5 c8e6 b1d2 f8c5 d1e1 e4d2 c1d2 e8g8 c2c3
+<< info depth 18 seldepth 28 multipv 1 score cp 32 nodes 406239 nps 1144335 hashfull 172 tbhits 0 time 355 pv e2e4 e7e5 g1f3 b8c6 d2d4 e5d4 f3d4 g8f6 d4c6 b7c6 d1e2 f8b4 c2c3 b4c5 e4e5
+<< info depth 19 seldepth 25 multipv 1 score cp 38 nodes 517102 nps 1191479 hashfull 215 tbhits 0 time 434 pv e2e4 c7c5 d2d4 c5d4 g1f3 e7e5 c2c3 b8c6 f1c4 f8c5 d1b3 d8f6 c3d4 c6d4 f3d4 c5d4
+<< info depth 20 seldepth 30 multipv 1 score cp 38 nodes 768773 nps 1258220 hashfull 309 tbhits 0 time 611 pv e2e4 e7e5 g1f3 b8c6 f1b5 a7a6 b5a4 g8f6 e1g1 f6e4 d2d4 b7b5 a4b3 d7d5 d4e5 c8e6 c2c3 f8e7 c1e3 e4c5 b3c2 e6g4 h2h3 g4f3 d1f3 c6e5 f3h5
+<< info depth 21 seldepth 28 multipv 1 score cp 38 nodes 872083 nps 1262059 hashfull 352 tbhits 0 time 691 pv e2e4 e7e5 g1f3 b8c6 f1b5 a7a6 b5a4 g8f6 e1g1 f6e4 d2d4 b7b5 a4b3 d7d5 d4e5 c8e6 c2c3 f8e7 c1e3 e4c5 b3c2 e6g4 h2h3 g4f3 d1f3 c6e5 f3h5
+<< info depth 22 seldepth 34 multipv 1 score cp 42 nodes 1356583 nps 1319633 hashfull 517 tbhits 0 time 1028 pv e2e4 e7e5 g1f3 b8c6 f1b5 a7a6 b5a4 g8f6 e1g1 f6e4 d2d4 b7b5 a4b3 d7d5 d4e5 c8e6 b1d2 e4c5 c2c3 d5d4 c3d4 c6d4 f3d4 d8d4 d1f3
+<< info depth 23 seldepth 38 multipv 1 score cp 32 nodes 2240135 nps 1361784 hashfull 744 tbhits 0 time 1645 pv e2e4 e7e5 g1f3 b8c6 d2d4 e5d4 f3d4 g8f6 d4c6 b7c6 f1d3 d7d5 e4e5 f6g4 e1g1 f8c5 d1e2 d8e7 c1f4 f7f6 e5f6 e7e2 d3e2 e8g8 f4c7 f8f6 c7g3 g4h6 e2d3
+<< info depth 24 seldepth 31 multipv 1 score cp 27 nodes 3180221 nps 1372559 hashfull 880 tbhits 0 time 2317 pv d2d4 d7d5 c2c4 d5c4 g1f3 a7a6 e2e4 b7b5 a2a4 c8b7 a4b5 a6b5 a1a8 b7a8 b1c3 e7e6 c3b5 a8e4 f1c4 f8b4 b5c3 e4f3 d1f3
+<< info depth 25 seldepth 28 multipv 1 score cp 30 nodes 3441646 nps 1373910 hashfull 901 tbhits 0 time 2505 pv d2d4 d7d5 c2c4 e7e6 b1c3 c7c5 c4d5 e6d5 g1f3 b8c6 d4c5 c8e6 c1e3 g8f6 e3d4 c6d4 d1d4 a8c8 b2b4 b7b6 e2e3 b6c5 f1b5 e6d7
+<< info depth 26 currmove e2e4 currmovenumber 2
+<< info depth 26 currmove g1f3 currmovenumber 3
+<< info depth 26 currmove b1c3 currmovenumber 4
+<< info depth 26 currmove d2d3 currmovenumber 5
+<< info depth 26 currmove a2a3 currmovenumber 6
+<< info depth 26 currmove h2h4 currmovenumber 7
+<< info depth 26 currmove h2h3 currmovenumber 8
+<< info depth 26 currmove b2b3 currmovenumber 9
+<< info depth 26 currmove a2a4 currmovenumber 10
+<< info depth 26 currmove c2c3 currmovenumber 11
+<< info depth 26 currmove g2g3 currmovenumber 12
+<< info depth 26 currmove b1a3 currmovenumber 13
+<< info depth 26 currmove e2e3 currmovenumber 14
+<< info depth 26 currmove f2f3 currmovenumber 15
+<< info depth 26 currmove b2b4 currmovenumber 16
+<< info depth 26 currmove c2c4 currmovenumber 17
+<< info depth 26 currmove f2f4 currmovenumber 18
+<< info depth 26 currmove g2g4 currmovenumber 19
+<< info depth 26 currmove g1h3 currmovenumber 20
+<< info depth 26 seldepth 28 multipv 1 score cp 27 upperbound nodes 4374616 nps 1362384 hashfull 952 tbhits 0 time 3211 pv d2d4 g8f6
+<< info depth 26 currmove d2d4 currmovenumber 1
+<< info depth 26 currmove e2e4 currmovenumber 2
+<< info depth 26 currmove g1f3 currmovenumber 3
+<< info depth 26 currmove b1c3 currmovenumber 4
+<< info depth 26 currmove g2g3 currmovenumber 5
+<< info depth 26 currmove c2c3 currmovenumber 6
+<< info depth 26 currmove h2h3 currmovenumber 7
+<< info depth 26 currmove a2a3 currmovenumber 8
+<< info depth 26 currmove b2b3 currmovenumber 9
+<< info depth 26 currmove d2d3 currmovenumber 10
+<< info depth 26 currmove a2a4 currmovenumber 11
+<< info depth 26 currmove e2e3 currmovenumber 12
+<< info depth 26 currmove f2f3 currmovenumber 13
+<< info depth 26 currmove b2b4 currmovenumber 14
+<< info depth 26 currmove c2c4 currmovenumber 15
+<< info depth 26 currmove f2f4 currmovenumber 16
+<< info depth 26 currmove g2g4 currmovenumber 17
+<< info depth 26 currmove h2h4 currmovenumber 18
+<< info depth 26 currmove b1a3 currmovenumber 19
+<< info depth 26 currmove g1h3 currmovenumber 20
+<< info depth 26 seldepth 28 multipv 1 score cp 24 upperbound nodes 4883172 nps 1353054 hashfull 968 tbhits 0 time 3609 pv d2d4 g8f6
+<< info depth 26 currmove d2d4 currmovenumber 1
+<< info depth 26 seldepth 32 multipv 1 score cp 27 lowerbound nodes 5493298 nps 1354697 hashfull 985 tbhits 0 time 4055 pv d2d4
+<< info depth 25 currmove d2d4 currmovenumber 1
+<< info depth 26 seldepth 32 multipv 1 score cp 32 lowerbound nodes 5537219 nps 1353843 hashfull 987 tbhits 0 time 4090 pv d2d4
+<< info depth 24 currmove d2d4 currmovenumber 1
+<< info depth 23 currmove e2e4 currmovenumber 2
+<< info depth 23 currmove b1c3 currmovenumber 3
+<< info depth 23 currmove g1f3 currmovenumber 4
+<< info depth 23 currmove c2c4 currmovenumber 5
+<< info depth 23 currmove c2c3 currmovenumber 6
+<< info depth 23 currmove b2b4 currmovenumber 7
+<< info depth 23 currmove d2d3 currmovenumber 8
+<< info depth 23 currmove e2e3 currmovenumber 9
+<< info depth 23 currmove h2h3 currmovenumber 10
+<< info depth 23 currmove g2g3 currmovenumber 11
+<< info depth 23 currmove h2h4 currmovenumber 12
+<< info depth 23 currmove a2a3 currmovenumber 13
+<< info depth 23 currmove b2b3 currmovenumber 14
+<< info depth 23 currmove f2f3 currmovenumber 15
+<< info depth 23 currmove a2a4 currmovenumber 16
+<< info depth 23 currmove f2f4 currmovenumber 17
+<< info depth 23 currmove g2g4 currmovenumber 18
+<< info depth 23 currmove b1a3 currmovenumber 19
+<< info depth 23 currmove g1h3 currmovenumber 20
+<< info depth 26 seldepth 32 multipv 1 score cp 33 nodes 5785705 nps 1345199 hashfull 990 tbhits 0 time 4301 pv d2d4 d7d5 c2c4 c7c6 c4d5 c6d5 b1c3 b8c6 e2e4 e7e6 e4e5 g8e7 g1f3 e7f5 c1e3 c8d7 f1d3 f5e3 f2e3 g7g6 e1g1 f8g7
+<< info depth 27 currmove d2d4 currmovenumber 1
+<< info depth 27 seldepth 32 multipv 1 score cp 35 lowerbound nodes 6344476 nps 1343314 hashfull 995 tbhits 0 time 4723 pv d2d4
+<< info depth 26 currmove d2d4 currmovenumber 1
+<< info depth 26 currmove e2e4 currmovenumber 2
+<< info depth 27 seldepth 32 multipv 1 score cp 28 upperbound nodes 6712411 nps 1341945 hashfull 997 tbhits 0 time 5002 pv d2d4 d7d5
+<< bestmove d2d4 ponder d7d5
+>> eval
+<< info string NNUE evaluation using nn-5af11540bbfe.nnue enabled
+<< 
+<<  Contributing terms for the classical eval:
+<< +------------+-------------+-------------+-------------+
+<< |    Term    |    White    |    Black    |    Total    |
+<< |            |   MG    EG  |   MG    EG  |   MG    EG  |
+<< +------------+-------------+-------------+-------------+
+<< |   Material |  ----  ---- |  ----  ---- |  0.00  0.00 |
+<< |  Imbalance |  ----  ---- |  ----  ---- |  0.00  0.00 |
+<< |      Pawns |  0.15 -0.02 |  0.15 -0.02 |  0.00  0.00 |
+<< |    Knights | -0.03 -0.12 | -0.03 -0.12 |  0.00  0.00 |
+<< |    Bishops | -0.00 -0.23 | -0.00 -0.23 |  0.00  0.00 |
+<< |      Rooks | -0.17 -0.04 | -0.17 -0.04 |  0.00  0.00 |
+<< |     Queens |  0.00  0.00 |  0.00  0.00 |  0.00  0.00 |
+<< |   Mobility | -0.55 -0.73 | -0.55 -0.73 |  0.00  0.00 |
+<< |King safety |  0.58 -0.07 |  0.58 -0.07 |  0.00  0.00 |
+<< |    Threats |  0.00  0.00 |  0.00  0.00 |  0.00  0.00 |
+<< |     Passed |  0.00  0.00 |  0.00  0.00 |  0.00  0.00 |
+<< |      Space |  0.26  0.00 |  0.26  0.00 |  0.00  0.00 |
+<< |   Winnable |  ----  ---- |  ----  ---- |  0.00  0.00 |
+<< +------------+-------------+-------------+-------------+
+<< |      Total |  ----  ---- |  ----  ---- |  0.00  0.00 |
+<< +------------+-------------+-------------+-------------+
+<< 
+<<  NNUE derived piece values:
+<< +-------+-------+-------+-------+-------+-------+-------+-------+
+<< |   r   |   n   |   b   |   q   |   k   |   b   |   n   |   r   |
+<< | -5.53 | -4.74 | -5.17 | -7.55 |       | -5.02 | -4.64 | -5.71 |
+<< +-------+-------+-------+-------+-------+-------+-------+-------+
+<< |   p   |   p   |   p   |   p   |   p   |   p   |   p   |   p   |
+<< | -0.68 | -1.18 | -1.31 | -1.22 | -1.19 | -1.46 | -1.28 | -0.45 |
+<< +-------+-------+-------+-------+-------+-------+-------+-------+
+<< |       |       |       |       |       |       |       |       |
+<< |       |       |       |       |       |       |       |       |
+<< +-------+-------+-------+-------+-------+-------+-------+-------+
+<< |       |       |       |       |       |       |       |       |
+<< |       |       |       |       |       |       |       |       |
+<< +-------+-------+-------+-------+-------+-------+-------+-------+
+<< |       |       |       |       |       |       |       |       |
+<< |       |       |       |       |       |       |       |       |
+<< +-------+-------+-------+-------+-------+-------+-------+-------+
+<< |       |       |       |       |       |       |       |       |
+<< |       |       |       |       |       |       |       |       |
+<< +-------+-------+-------+-------+-------+-------+-------+-------+
+<< |   P   |   P   |   P   |   P   |   P   |   P   |   P   |   P   |
+<< | +0.69 | +1.19 | +1.35 | +1.25 | +1.26 | +1.46 | +1.31 | +0.45 |
+<< +-------+-------+-------+-------+-------+-------+-------+-------+
+<< |   R   |   N   |   B   |   Q   |   K   |   B   |   N   |   R   |
+<< | +4.67 | +4.10 | +4.63 | +6.47 |       | +4.41 | +4.06 | +4.95 |
+<< +-------+-------+-------+-------+-------+-------+-------+-------+
+<< 
+<<  NNUE network contributions (White to move)
+<< +------------+------------+------------+------------+
+<< |   Bucket   |  Material  | Positional |   Total    |
+<< |            |   (PSQT)   |  (Layers)  |            |
+<< +------------+------------+------------+------------+
+<< |  0         |     0.00   |  -  2.04   |  -  2.04   |
+<< |  1         |     0.00   |  +  0.09   |  +  0.09   |
+<< |  2         |     0.00   |  +  0.29   |  +  0.29   |
+<< |  3         |     0.00   |  +  0.38   |  +  0.38   |
+<< |  4         |     0.00   |  +  0.53   |  +  0.53   |
+<< |  5         |     0.00   |  +  0.26   |  +  0.26   |
+<< |  6         |     0.00   |  +  0.20   |  +  0.20   |
+<< |  7         |     0.00   |  +  0.26   |  +  0.26   | <-- this bucket is used
+<< +------------+------------+------------+------------+
+<< 
+<< 
+<< Classical evaluation   +0.00 (white side)
+<< NNUE evaluation        +0.26 (white side)
+<< Final evaluation       +0.29 (white side) [with scaled NNUE, hybrid, ...]
+<< 
