@@ -6,9 +6,18 @@ using System.Text.RegularExpressions;
 using System;
 using System.IO;
 using System.Threading;
+using System.Security;
+using System.Text.Json;
+using System.Collections.ObjectModel;
 
 namespace Tuner
 {
+    internal class PositionEvaluation
+    {
+        public string fen { get; set; }
+        public int eval { get; set; }
+    }
+
     internal class Program
     {
         private static readonly int TEST_VALUE = 1;
@@ -17,171 +26,49 @@ namespace Tuner
 
         static void Main(string[] args)
         {
-            ChessChallenge.Chess.Board tempBoard = new ChessChallenge.Chess.Board();
-            tempBoard.LoadStartPosition();
-            Board board = new Board(tempBoard);
-
-            // Replace "your-pgn-file.pgn" with the actual path to your PGN file
-            string pgnFilePath = "C:\\Users\\timon\\Documents\\Programmieren\\C#\\Chess-Challenge\\Tuner\\Magnus Carlsen-black.pgn";
-
-            // Read the PGN file content
-            string pgnContent = File.ReadAllText(pgnFilePath);
-
-            // Define a regular expression pattern to match games
-            string gamePattern = @"\[(.*?)\]((?:(?!\[)[\s\S])*)";
-
-            // Use Regex to find all matches of games in the PGN content
-            MatchCollection gameMatches = Regex.Matches(pgnContent, gamePattern);
-
-            // Create a list to store the moves from each game
-            List<Move[]> allGames = new List<Move[]>();
-
-            // Iterate through the matched games
-            foreach (Match gameMatch in gameMatches)
-            {
-                // Get the moves part of the game
-                string gameMoves = gameMatch.Groups[2].Value.Trim();
-
-                // Define a regular expression pattern to match moves within a game
-                string movePattern = @"([NBRQK]?[a-h]?[1-8]?x?[a-h][1-8][+#]?|O-O(?:-O)?)";
-
-                // Use Regex to find all matches of moves in the gameMoves content
-                MatchCollection moveMatches = Regex.Matches(gameMoves, movePattern);
-
-                Move[] moves = new Move[moveMatches.Count];
-
-                Console.WriteLine("Finished Loading");
-
-                board.board.LoadStartPosition();
-
-                // Extract and add the moves to the list
-                for (int i = 0; i < moveMatches.Count; i++)
-                {
-                    string moveString = moveMatches[i].Value;
-                    Move[] allLegalMoves = board.GetLegalMoves();
-                    bool isCapture = moveString.Contains("x");
-                    bool isCastling = moveString.Contains("-");
-                    bool isPawnMove = char.IsLower(moveString[0]);
-                    bool isCheck = moveString.Contains("+");
-                    bool isPromotion = moveString.Contains("=");
-                    bool isSmallCastle = moveString.Length == 3;
-                    PieceType moveType = PieceType.Pawn;
-                    if (!isPawnMove)
-                    {
-                        getPieceType(moveString[0]);
-                    }
-                    Square targetSquare = new Square();
-                    int startFile = -1;
-                    int startRank = -1;
-                    PieceType promotionType = PieceType.None;
-                    if (!isCastling)
-                    {
-                        if (moveString.Length == 3)
-                        {
-                            targetSquare = new Square(FILE_NAMES.IndexOf(moveString[1]), int.Parse(moveString[2].ToString()) - 1);
-                        }
-                        else if (isCheck && moveString.Length == 4)
-                        {
-                            targetSquare = new Square(FILE_NAMES.IndexOf(moveString[1]), int.Parse(moveString[2].ToString()) - 1);
-                        }
-                        else if (isCapture && !isPawnMove && moveString.Length == 4)
-                        {
-                            targetSquare = new Square(FILE_NAMES.IndexOf(moveString[2]), int.Parse(moveString[3].ToString()) - 1);
-                        }
-                        else if (isPawnMove && !isCapture)
-                        {
-                            targetSquare = new Square(FILE_NAMES.IndexOf(moveString[0]), int.Parse(moveString[1].ToString()) - 1);
-                        }
-                        else if (isPawnMove && isCapture)
-                        {
-                            targetSquare = new Square(FILE_NAMES.IndexOf(moveString[moveString.Length - 2]), int.Parse(moveString[moveString.Length - 1].ToString()) - 1);
-                            if (char.IsLetter(moveString[0]) && char.IsLetter(moveString[1]))
-                            {
-                                startFile = FILE_NAMES.IndexOf(char.ToLower(moveString[0]));
-                            }
-                        }
-                    }
-                    if (!isPawnMove && char.IsLetter(moveString[0]) && char.IsLetter(moveString[1]) && char.IsLetter(moveString[2]))
-                    {
-                        startFile = FILE_NAMES.IndexOf(char.ToLower(moveString[1]));
-                    } else if (!isPawnMove && char.IsLetter(moveString[0]) && char.IsDigit(moveString[1]) && char.IsLetter(moveString[2])) {
-                        startRank = int.Parse(moveString[1].ToString()) - 1;
-                    }
-                    if (isPromotion && !isCheck)
-                    {
-                        promotionType = getPieceType(moveString[moveString.Length - 1]);
-                    } else if (isPromotion)
-                    {
-                        promotionType = getPieceType(moveString[moveString.Length - 2]);
-                    }
-                    for (int j = 0; j < allLegalMoves.Length; j++)
-                    {
-                        Move currentMove = allLegalMoves[j];
-                        if (currentMove.TargetSquare.Equals(targetSquare))
-                        {
-                            if (startRank >= 0 && startRank != currentMove.StartSquare.Rank)
-                            {
-                                continue;
-                            }
-                            if (startRank >= 0 && startFile != currentMove.StartSquare.File)
-                            {
-                                continue;
-                            }
-                            if (isCapture != currentMove.IsCapture)
-                            {
-                                continue;
-                            }
-                            if (moveType != currentMove.MovePieceType)
-                            {
-                                continue;
-                            }
-                            if (promotionType != currentMove.PromotionPieceType)
-                            {
-                                continue;
-                            }
-                        } else if (!isCastling)
-                        {
-                            continue;
-                        } 
-                        if (isCastling != currentMove.IsCastles)
-                        {
-                            continue;
-                        } else if (isCastling)
-                        {
-                            if (isSmallCastle && currentMove.TargetSquare.File != 6)
-                            {
-                                continue;
-                            }
-                        }
-                        moves[i] = currentMove;
-                        break;
-                    }
-
-                    if (moves[i].IsNull)
-                    {
-                        Console.WriteLine("Error");
-                        Console.WriteLine(moveString + " : " + targetSquare.ToString());
-                        break;
-                        //throw new Exception();
-                    } else
-                    {
-                        board.MakeMove(moves[i]);
-                    }
-
-                    //moves[i] = moveMatch.Groups[1].Value;
-                }
-
-                allGames.Add(moves);
-            }
+            List<Move[]> allGames = getAllGames();
 
             Console.WriteLine("Finished Parsing");
 
+            ChessChallenge.Chess.Board tempBoard = new ChessChallenge.Chess.Board();
+            tempBoard.LoadStartPosition();
+            Board board = new Board(tempBoard);
             Random random = new Random();
             int iterations = 0;
             MyBot bot = new MyBot();
             int r;
             int[] parameters = { 0, 0 , 0, 0};
             int[] parameterChanges = new int[parameters.Length];
+            PositionEvaluation[] toSave = new PositionEvaluation[allGames.Count];
+
+            for (int i = 0; i < allGames.Count; i++)
+            {
+                board.board.LoadStartPosition();
+                r = random.Next(allGames[i].Length);
+                for (int j = 0; j < r; j++)
+                {
+                    board.MakeMove(allGames[i][j]);
+                    if (j == r-1)
+                    {
+                        if (board.IsInCheck())
+                        {
+                            r++;
+                        }
+                    }
+                }
+                int eval = getTrueEval(board);
+                toSave[i] = new PositionEvaluation
+                {
+                    eval = eval,
+                    fen = board.GetFenString()
+                };
+                Console.WriteLine("Game: " + i + "/" + allGames.Count);
+            }
+
+            string jsonString = JsonSerializer.Serialize(toSave);
+            string filePath = "positionTable.json";
+            File.WriteAllText(filePath, jsonString);
+
             while (iterations < 1000)
             {
                 board.board.LoadStartPosition();
@@ -196,6 +83,10 @@ namespace Tuner
 
                 int oldEval = bot.TunerEvaluate(board, parameters);
                 int trueEval = getTrueEval(board);
+                if (!board.IsWhiteToMove)
+                {
+                    trueEval = -trueEval;
+                }
 
                 Console.WriteLine("Finished Stockfish Eval");
 
@@ -234,6 +125,215 @@ namespace Tuner
             }
         }
 
+        static List<Move[]> getAllGames()
+        {
+            ChessChallenge.Chess.Board tempBoard = new ChessChallenge.Chess.Board();
+            tempBoard.LoadStartPosition();
+            Board board = new Board(tempBoard);
+
+            // Replace "your-pgn-file.pgn" with the actual path to your PGN file
+            string pgnFilePath = "C:\\Users\\timon\\Documents\\Programmieren\\C#\\Chess-Challenge\\Tuner\\Magnus Carlsen-black.pgn";
+
+            // Read the PGN file content
+            string pgnContent = File.ReadAllText(pgnFilePath);
+
+            // Define a regular expression pattern to match games
+            string gamePattern = @"\[(.*?)\]((?:(?!\[)[\s\S])*)";
+
+            // Use Regex to find all matches of games in the PGN content
+            MatchCollection gameMatches = Regex.Matches(pgnContent, gamePattern);
+
+            // Create a list to store the moves from each game
+            List<Move[]> allGames = new List<Move[]>();
+
+            // Iterate through the matched games
+            foreach (Match gameMatch in gameMatches)
+            {
+                // Get the moves part of the game
+                string gameMoves = gameMatch.Groups[2].Value.Trim();
+
+                // Define a regular expression pattern to match moves within a game
+                string movePattern = @"([NBRQK]?[a-h]?[1-8]?x?[a-h][1-8](?:=[NBRQK])?[+#]?|O-O(?:-O)?)";
+
+                // Use Regex to find all matches of moves in the gameMoves content
+                MatchCollection moveMatches = Regex.Matches(gameMoves, movePattern);
+
+                if (moveMatches.Count == 0)
+                {
+                    continue;
+                }
+
+                Move[] moves = new Move[moveMatches.Count];
+
+                Console.WriteLine("Finished Loading");
+
+                board.board.LoadStartPosition();
+
+                // Extract and add the moves to the list
+                for (int i = 0; i < moveMatches.Count; i++)
+                {
+                    string moveString = moveMatches[i].Value;
+                    Move[] allLegalMoves = board.GetLegalMoves();
+                    bool isCapture = moveString.Contains("x");
+                    bool isCastling = moveString.Contains("-");
+                    bool isPawnMove = char.IsLower(moveString[0]);
+                    bool isCheck = moveString.Contains("+");
+                    bool isPromotion = moveString.Contains("=");
+                    bool isSmallCastle = moveString.Length == 3;
+                    PieceType moveType = PieceType.Pawn;
+                    if (!isPawnMove)
+                    {
+                        moveType = getPieceType(moveString[0]);
+                    }
+                    Square targetSquare = new Square();
+                    int startFile = -1;
+                    int startRank = -1;
+                    PieceType promotionType = PieceType.None;
+                    if (!isCastling)
+                    {
+                        if (!isPawnMove)
+                        {
+                            if (moveString.Length == 3)
+                            {
+                                targetSquare = new Square(FILE_NAMES.IndexOf(moveString[1]), int.Parse(moveString[2].ToString()) - 1);
+                            }
+                            else if (isCheck)
+                            {
+                                if (moveString.Length == 4)
+                                    targetSquare = new Square(FILE_NAMES.IndexOf(moveString[1]), int.Parse(moveString[2].ToString()) - 1);
+                                else if (moveString.Length == 5 && isCapture)
+                                    targetSquare = new Square(FILE_NAMES.IndexOf(moveString[2]), int.Parse(moveString[3].ToString()) - 1);
+                            }
+                            else if (isCapture && moveString.Length == 4)
+                            {
+                                targetSquare = new Square(FILE_NAMES.IndexOf(moveString[2]), int.Parse(moveString[3].ToString()) - 1);
+                            }
+                            if (char.IsLetter(moveString[0]) && char.IsLetter(moveString[1]) && char.IsLetter(moveString[2]))
+                            {
+                                if (!isCapture)
+                                {
+                                    targetSquare = new Square(FILE_NAMES.IndexOf(moveString[2]), int.Parse(moveString[3].ToString()) - 1);
+                                }
+                                else if (char.IsLetter(moveString[3]))
+                                {
+                                    targetSquare = new Square(FILE_NAMES.IndexOf(moveString[3]), int.Parse(moveString[4].ToString()) - 1);
+                                }
+                            }
+                            if (!isCapture)
+                            {
+                                if (char.IsLetter(moveString[0]) && char.IsDigit(moveString[1]) && char.IsLetter(moveString[2]))
+                                {
+                                    targetSquare = new Square(FILE_NAMES.IndexOf(moveString[2]), int.Parse(moveString[3].ToString()) - 1);
+                                    startRank = int.Parse(moveString[1].ToString()) - 1;
+                                }
+                            }
+                            else
+                            {
+                                if (char.IsLetter(moveString[0]) && char.IsDigit(moveString[1]) && char.IsLetter(moveString[3]))
+                                {
+                                    targetSquare = new Square(FILE_NAMES.IndexOf(moveString[3]), int.Parse(moveString[4].ToString()) - 1);
+                                    startRank = int.Parse(moveString[1].ToString()) - 1;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (!isCapture)
+                            {
+                                targetSquare = new Square(FILE_NAMES.IndexOf(moveString[0]), int.Parse(moveString[1].ToString()) - 1);
+                            }
+                            else if (isCapture)
+                            {
+                                targetSquare = new Square(FILE_NAMES.IndexOf(moveString[2]), int.Parse(moveString[3].ToString()) - 1);
+                                if (char.IsLetter(moveString[0]) && char.IsLetter(moveString[1]))
+                                {
+                                    startFile = FILE_NAMES.IndexOf(char.ToLower(moveString[0]));
+                                }
+                            }
+                        }
+                    }
+                    if (!isPawnMove && char.IsLetter(moveString[0]) && char.IsLetter(moveString[1]) && char.IsLetter(moveString[2]))
+                    {
+                        startFile = FILE_NAMES.IndexOf(char.ToLower(moveString[1]));
+                    }
+                    else if (!isPawnMove && char.IsLetter(moveString[0]) && char.IsDigit(moveString[1]) && char.IsLetter(moveString[2]))
+                    {
+                        startRank = int.Parse(moveString[1].ToString()) - 1;
+                    }
+                    if (isPromotion && !isCheck)
+                    {
+                        promotionType = getPieceType(moveString[moveString.Length - 1]);
+                    }
+                    else if (isPromotion)
+                    {
+                        promotionType = getPieceType(moveString[moveString.Length - 2]);
+                    }
+                    for (int j = 0; j < allLegalMoves.Length; j++)
+                    {
+                        Move currentMove = allLegalMoves[j];
+                        if (currentMove.TargetSquare.Equals(targetSquare))
+                        {
+                            if (startRank >= 0 && startRank != currentMove.StartSquare.Rank)
+                            {
+                                continue;
+                            }
+                            if (startFile >= 0 && startFile != currentMove.StartSquare.File)
+                            {
+                                continue;
+                            }
+                            if (isCapture != currentMove.IsCapture)
+                            {
+                                continue;
+                            }
+                            if (moveType != currentMove.MovePieceType)
+                            {
+                                continue;
+                            }
+                            if (promotionType != currentMove.PromotionPieceType)
+                            {
+                                continue;
+                            }
+                        }
+                        else if (!isCastling)
+                        {
+                            continue;
+                        }
+                        if (isCastling != currentMove.IsCastles)
+                        {
+                            continue;
+                        }
+                        else if (isCastling)
+                        {
+                            if (isSmallCastle && currentMove.TargetSquare.File != 6)
+                            {
+                                continue;
+                            }
+                            else if (!isSmallCastle && currentMove.TargetSquare.File != 2)
+                            {
+                                continue;
+                            }
+                        }
+                        moves[i] = currentMove;
+                        break;
+                    }
+
+                    if (moves[i].IsNull)
+                    {
+                        Console.WriteLine("Error");
+                        Console.WriteLine(moveString + " : " + targetSquare.ToString());
+                        throw new Exception();
+                    }
+                    else
+                    {
+                        board.MakeMove(moves[i]);
+                    }
+                }
+
+                allGames.Add(moves);
+            }
+            return allGames;
+        }
+
         static PieceType getPieceType(char pieceChar)
         {
             switch (pieceChar)
@@ -267,37 +367,45 @@ namespace Tuner
             p.StandardInput.WriteLine(setupString);
 
             // Process for 5 seconds
-            string processString = "go movetime 5000";
+            string processString = "go movetime 900";
 
             // Process 20 deep
-            //string processString = "go depth 15";
+            //string processString = "go depth 2";
 
             p.StandardInput.WriteLine(processString);
 
             //Console.WriteLine("Started Stockfish");
 
-            Thread.Sleep(5100);
+            Thread.Sleep(1000);
 
             //Console.WriteLine("Stopped Sleeping");
 
             p.StandardInput.WriteLine("eval");
 
-            Thread.Sleep(20);
+            Thread.Sleep(40);
 
-            for (int i = 0; i < 94; i++)
+            p.StandardInput.WriteLine("quit");
+
+            string result = "";
+
+            while (!p.StandardOutput.EndOfStream)
             {
-                //Console.WriteLine(
-                    p.StandardOutput.ReadLine()
-                    //)
-                    ;
+                result += p.StandardOutput.ReadLine() + "\n";
             }
 
-            string evalText = p.StandardOutput.ReadLine();
+            Console.WriteLine(result);
 
-            Console.WriteLine("Got Stockfish Eval");
+            MatchCollection matches = Regex.Matches(result, "(-|\\+)?\\d+\\.\\d+");
+            if (matches.Count == 0)
+            {
+                return int.MinValue;
+            }
+            string evalText = matches[matches.Count - 1].Value;
+
+            Console.WriteLine("Got Stockfish Eval: " + float.Parse(evalText));
 
             p.Close();
-            return (int)Math.Round(float.Parse(evalText.Substring(23, 5))*100);
+            return (int)Math.Round(float.Parse(evalText));
         }
     }
 }
