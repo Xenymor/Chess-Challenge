@@ -80,9 +80,9 @@ public class MyBot : IChessBot {
         return score * (board.IsWhiteToMove ? 1 : -1);
     }
 
-    public int TunerEvaluate(Board board, int[] parameters)
+    public int TunerEvaluate(Board board, float[] parameters)
     {
-        int middleGame = 0, endGame = 0, phase = 0;
+        float middleGame = 0, endGame = 0, phase = 0;
         bool stm = true;
         do
         {
@@ -127,8 +127,8 @@ public class MyBot : IChessBot {
             endGame = -endGame;
             stm = !stm;
         } while (!stm);
-        int score = ((middleGame * phase + endGame * (24 - phase)) / 24) + 16;
-        return score * (board.IsWhiteToMove ? 1 : -1);
+        float score = ((middleGame * phase + endGame * (24 - phase)) / 24) + 16;
+        return (int) (score * (board.IsWhiteToMove ? 1 : -1));
     }
 
     public int AlphaBeta(Board board, Timer timer, int alpha, int beta, int depth, int ply)

@@ -20,16 +20,12 @@ namespace Tuner
 
     internal class Program
     {
-        private static readonly int TEST_VALUE = 1;
-        private static readonly int STEP_VALUE = 1;
+        private static readonly float TEST_VALUE = .01f;
+        private static readonly float STEP_VALUE = .001f;
         static readonly string FILE_NAMES = "abcdefgh";
 
         static void Main(string[] args)
         {
-            List<Move[]> allGames = getAllGames();
-
-            Console.WriteLine("Finished Parsing");
-
             ChessChallenge.Chess.Board tempBoard = new ChessChallenge.Chess.Board();
             tempBoard.LoadStartPosition();
             Board board = new Board(tempBoard);
@@ -37,8 +33,14 @@ namespace Tuner
             int iterations = 0;
             MyBot bot = new MyBot();
             int r;
-            int[] parameters = { 0, 0 , 0, 0};
-            int[] parameterChanges = new int[parameters.Length];
+            float[] parameters = { 17.804245f, -42.86006f, -1.0475401f, 0.7519452f };
+            float[] parameterChanges = new float[parameters.Length];
+            string filePath = "positionTable.json";
+
+            /*List<Move[]> allGames = getAllGames();
+
+            Console.WriteLine("Finished Parsing");
+
             PositionEvaluation[] toSave = new PositionEvaluation[allGames.Count];
 
             for (int i = 0; i < allGames.Count; i++)
@@ -66,29 +68,21 @@ namespace Tuner
             }
 
             string jsonString = JsonSerializer.Serialize(toSave);
-            string filePath = "positionTable.json";
-            File.WriteAllText(filePath, jsonString);
+            File.WriteAllText(filePath, jsonString);*/
 
-            while (iterations < 1000)
+            PositionEvaluation[] allPositions = JsonSerializer.Deserialize<PositionEvaluation[]>(File.ReadAllText(filePath));
+
+            while (iterations < 100_000_000)
             {
-                board.board.LoadStartPosition();
-                Move[] game = allGames[random.Next(allGames.Count-1)];
-                r = random.Next(Math.Max(game.Length-1, 0));
-                for (int i = 0; i < r; i++)
-                {
-                    board.MakeMove(game[i]);
-                }
-
-                Console.WriteLine("Finished Setup");
+                PositionEvaluation position = allPositions[random.Next(allPositions.Length-1)];
+                board.board.LoadPosition(position.fen);
 
                 int oldEval = bot.TunerEvaluate(board, parameters);
-                int trueEval = getTrueEval(board);
+                int trueEval = position.eval;
                 if (!board.IsWhiteToMove)
                 {
                     trueEval = -trueEval;
                 }
-
-                Console.WriteLine("Finished Stockfish Eval");
 
                 int oldDistance = Math.Abs(oldEval - trueEval);
                 int newEval;
@@ -111,8 +105,7 @@ namespace Tuner
                     parameters[i] += parameterChanges[i];
                 }
 
-                Console.WriteLine("Finished Adaptation");
-                if (iterations % 1 == 0)
+                if (iterations % 1_000 == 0)
                 {
                     string msg = "\n";
                     for (int i = 0; i < parameters.Length; i++)
@@ -122,6 +115,15 @@ namespace Tuner
                     Console.WriteLine(msg);
                 }
                 iterations++;
+            }
+            if (iterations % 10 == 0)
+            {
+                string msg = "\n";
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    msg += parameters[i].ToString() + ", ";
+                }
+                Console.WriteLine(msg);
             }
         }
 
@@ -398,7 +400,7 @@ namespace Tuner
             MatchCollection matches = Regex.Matches(result, "(-|\\+)?\\d+\\.\\d+");
             if (matches.Count == 0)
             {
-                return int.MinValue;
+                throw new Exception();
             }
             string evalText = matches[matches.Count - 1].Value;
 
