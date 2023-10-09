@@ -1,7 +1,6 @@
 ﻿using ChessChallenge.API;
 using ChessChallenge.Application;
 using System;
-using System.Collections.Generic;
 
 namespace ChessChallenge.EvilBot5_1
 {

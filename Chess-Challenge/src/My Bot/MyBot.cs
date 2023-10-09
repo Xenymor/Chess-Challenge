@@ -1,9 +1,9 @@
 ﻿using ChessChallenge.API;
 using ChessChallenge.Application;
 using System;
-using System.Numerics;
 
-public class MyBot : IChessBot {
+public class MyBot : IChessBot
+{
     Move bestRootMove = Move.NullMove;
 
     struct TTEntry
@@ -34,7 +34,8 @@ public class MyBot : IChessBot {
     {
         int middleGame = 0, endGame = 0, phase = 0;
         bool stm = true;
-        do {
+        do
+        {
             for (var p = PieceType.Pawn; p <= PieceType.King; p++)
             {
                 int piece = (int)p, ind;
@@ -118,8 +119,8 @@ public class MyBot : IChessBot {
                     // Doubled pawns penalty
                     /*if (piece == 0 && (0x101010101010101UL << (square & 7) & mask) > 0)
                     {
-                        middleGame -= 15;
-                        endGame -= 30;
+                        middleGame -= parameters[4];
+                        endGame -= parameters[5];
                     }*/
                 }
             }
@@ -128,7 +129,7 @@ public class MyBot : IChessBot {
             stm = !stm;
         } while (!stm);
         float score = ((middleGame * phase + endGame * (24 - phase)) / 24) + 16;
-        return (int) (score * (board.IsWhiteToMove ? 1 : -1));
+        return (int)(score * (board.IsWhiteToMove ? 1 : -1));
     }
 
     public int AlphaBeta(Board board, Timer timer, int alpha, int beta, int depth, int ply)
@@ -206,7 +207,7 @@ public class MyBot : IChessBot {
             }
         }
 
-        if (!qsearch && moves.Length == 0) return board.IsInCheck() ? -30_000 + ply*1000 : 0;
+        if (!qsearch && moves.Length == 0) return board.IsInCheck() ? -30_000 + ply * 1000 : 0;
 
         int bound = bestScore >= beta ? 2 : bestScore > origAlpha ? 3 : 1;
 
@@ -224,7 +225,8 @@ public class MyBot : IChessBot {
         int eval = lastEval;
         int alpha = eval - 25;
         int beta = eval + 25;
-        while (calculatedDepth < 50) {
+        while (calculatedDepth < 50)
+        {
             eval = AlphaBeta(board, timer, alpha, beta, calculatedDepth, 0);
             if (eval <= alpha)
                 alpha -= 60;
@@ -243,7 +245,7 @@ public class MyBot : IChessBot {
                 break;
             }
         }
-        Console.WriteLine("MyBot: " + eval/100f + ";\tDepth: " + calculatedDepth); //#DEBUG
+        Console.WriteLine("MyBot: " + eval / 100f + ";\tDepth: " + calculatedDepth); //#DEBUG
         MatchStatsUI.depthSum1 += calculatedDepth; //#DEBUG
         MatchStatsUI.movesPlayed1++; //#DEBUG
         return bestRootMove.IsNull ? board.GetLegalMoves()[0] : bestRootMove;

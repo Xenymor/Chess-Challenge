@@ -1,14 +1,10 @@
 ﻿using ChessChallenge.API;
-using ChessChallenge.Application;
-using ChessChallenge.Example;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Threading;
-using System.Security;
 using System.Text.Json;
-using System.Collections.ObjectModel;
+using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace Tuner
 {
@@ -21,7 +17,7 @@ namespace Tuner
     internal class Program
     {
         private static readonly float TEST_VALUE = .01f;
-        private static readonly float STEP_VALUE = .001f;
+        private static readonly float STEP_VALUE = .0001f;
         static readonly string FILE_NAMES = "abcdefgh";
 
         static void Main(string[] args)
@@ -32,25 +28,149 @@ namespace Tuner
             Random random = new Random();
             int iterations = 0;
             MyBot bot = new MyBot();
-            int r;
             float[] parameters = { 17.804245f, -42.86006f, -1.0475401f, 0.7519452f };
             float[] parameterChanges = new float[parameters.Length];
             string filePath = "positionTable.json";
 
-            /*List<Move[]> allGames = getAllGames();
+
+            //int gameMultiplier = 3;
+            //int counter = 0;
+
+            //Generate new File
+
+            /*
+            
+            List<Move[]> allGames = getAllGames();
 
             Console.WriteLine("Finished Parsing");
 
-            PositionEvaluation[] toSave = new PositionEvaluation[allGames.Count];
+            PositionEvaluation[] toSave = new PositionEvaluation[allGames.Count];// *gameMultiplier];
+            generateEvaluationArray(board, random, allGames, toSave);
 
+            string jsonString = JsonSerializer.Serialize(toSave);
+            File.WriteAllText(filePath, jsonString);
+            
+            */
+
+            //Train
+
+            PositionEvaluation[] allPositions = JsonSerializer.Deserialize<PositionEvaluation[]>(File.ReadAllText(filePath));
+            PositionEvaluation[] trainingPositions = new PositionEvaluation[allPositions.Length - 400];
+            PositionEvaluation[] testPositions = new PositionEvaluation[400];
+
+            for (int i = 0; i < allPositions.Length; i++)
+            {
+                if (i < 400)
+                {
+                    testPositions[i] = allPositions[i];
+                }
+                else
+                {
+                    trainingPositions[i - 400] = allPositions[i];
+                }
+            }
+
+            while (iterations < 100_000_000)
+            {
+                int oldEval, trueEval;
+
+                prepareBoardAndGetEval(board, iterations, bot, parameters, trainingPositions, out oldEval, out trueEval);
+
+                int oldDistance = Math.Abs(oldEval - trueEval);
+
+                createChangeValues(board, bot, parameters, parameterChanges, trueEval, oldDistance);
+
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    parameters[i] += parameterChanges[i];
+                }
+
+                if (iterations % 100_000 == 0)
+                {
+                    OutputCurrentStandings(board, bot, parameters, testPositions);
+                }
+                iterations++;
+            }
+            if (iterations % 10_000 == 0)
+            {
+                OutputCurrentStandings(board, bot, parameters, testPositions);
+            }
+        }
+
+        private static void OutputCurrentStandings(Board board, MyBot bot, float[] parameters, PositionEvaluation[] testPositions)
+        {
+            int distSum = 0;
+            int positions = testPositions.Length;
+            for (int i = 0; i < testPositions.Length; i++)
+            {
+                board.board.LoadPosition(testPositions[i].fen);
+                distSum += Math.Abs(testPositions[i].eval - bot.TunerEvaluate(board, parameters));
+            }
+            string msg = "\n";
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                msg += parameters[i].ToString() + ", ";
+            }
+            Console.WriteLine(msg + "\n" + "Cost: " + ((float)distSum / positions));
+        }
+
+        private static void createChangeValues(Board board, MyBot bot, float[] parameters, float[] parameterChanges, int trueEval, int oldDistance)
+        {
+            int newEval;
+            int newDistance;
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                parameters[i] += TEST_VALUE;
+                newEval = bot.TunerEvaluate(board, parameters);
+                parameters[i] -= TEST_VALUE;
+                newDistance = Math.Abs(newEval - trueEval);
+                if (newDistance < oldDistance)
+                {
+                    parameterChanges[i] = STEP_VALUE;
+                }
+                else if (newDistance != oldDistance)
+                {
+                    parameterChanges[i] = -STEP_VALUE;
+                }
+            }
+        }
+
+        private static void prepareBoardAndGetEval(Board board, int iterations, MyBot bot, float[] parameters, PositionEvaluation[] trainingPositions, out int oldEval, out int trueEval)
+        {
+            PositionEvaluation position = trainingPositions[iterations % trainingPositions.Length];
+            board.board.LoadPosition(position.fen);
+
+            oldEval = bot.TunerEvaluate(board, parameters);
+            trueEval = position.eval;
+            if (!board.IsWhiteToMove)
+            {
+                trueEval = -trueEval;
+            }
+        }
+
+        private static void generateEvaluationArray(Board board, Random random, List<Move[]> allGames, PositionEvaluation[] toSave)
+        {
+            bool broke;
+            int r;
+            Move[] moves;
             for (int i = 0; i < allGames.Count; i++)
             {
+                /*if (counter < gameMultiplier)
+                {
+                    counter++;
+                    i = Math.Max(i - 1, 0);
+                } else
+                {
+                    counter = 0;
+                    continue;
+                }*/
+                broke = false;
                 board.board.LoadStartPosition();
                 r = random.Next(allGames[i].Length);
                 for (int j = 0; j < r; j++)
                 {
                     board.MakeMove(allGames[i][j]);
-                    if (j == r-1)
+                    if (j == r - 1)
                     {
                         if (board.IsInCheck())
                         {
@@ -58,72 +178,39 @@ namespace Tuner
                         }
                     }
                 }
-                int eval = getTrueEval(board);
-                toSave[i] = new PositionEvaluation
+                moves = board.GetLegalMoves(true);
+                while (moves.Length != 0 || board.IsInCheck())
+                {
+                    if (moves.Length == 0)
+                    {
+                        moves = board.GetLegalMoves();
+                    }
+                    if (moves.Length == 0)
+                    {
+                        broke = true;
+                        break;
+                    }
+                    board.MakeMove(moves[random.Next(moves.Length - 1)]);
+                    moves = board.GetLegalMoves(true);
+                }
+                int eval;
+                if (!broke)
+                {
+                    eval = getTrueEval(board);
+                }
+                else if(board.IsInCheckmate()) {
+                    eval = 30_000 * (board.IsWhiteToMove ? -1 : 1);
+                }
+                else
+                {
+                    eval = 0;
+                }
+                toSave[(i/*/gameMultiplier*/)] = new PositionEvaluation
                 {
                     eval = eval,
                     fen = board.GetFenString()
                 };
-                Console.WriteLine("Game: " + i + "/" + allGames.Count);
-            }
-
-            string jsonString = JsonSerializer.Serialize(toSave);
-            File.WriteAllText(filePath, jsonString);*/
-
-            PositionEvaluation[] allPositions = JsonSerializer.Deserialize<PositionEvaluation[]>(File.ReadAllText(filePath));
-
-            while (iterations < 100_000_000)
-            {
-                PositionEvaluation position = allPositions[random.Next(allPositions.Length-1)];
-                board.board.LoadPosition(position.fen);
-
-                int oldEval = bot.TunerEvaluate(board, parameters);
-                int trueEval = position.eval;
-                if (!board.IsWhiteToMove)
-                {
-                    trueEval = -trueEval;
-                }
-
-                int oldDistance = Math.Abs(oldEval - trueEval);
-                int newEval;
-                int newDistance;
-                for (int i = 0; i < parameters.Length; i++)
-                {
-                    parameters[i] += TEST_VALUE;
-                    newEval = bot.TunerEvaluate(board, parameters);
-                    parameters[i] -= TEST_VALUE;
-                    newDistance = Math.Abs(newEval - trueEval);
-                    if (newDistance < oldDistance) {
-                        parameterChanges[i] = STEP_VALUE;
-                    } else if (newDistance != oldDistance) {
-                        parameterChanges[i] = -STEP_VALUE;
-                    }
-                }
-
-                for (int i = 0; i < parameters.Length; i++)
-                {
-                    parameters[i] += parameterChanges[i];
-                }
-
-                if (iterations % 1_000 == 0)
-                {
-                    string msg = "\n";
-                    for (int i = 0; i < parameters.Length; i++)
-                    {
-                        msg += parameters[i].ToString() + ", ";
-                    }
-                    Console.WriteLine(msg);
-                }
-                iterations++;
-            }
-            if (iterations % 10 == 0)
-            {
-                string msg = "\n";
-                for (int i = 0; i < parameters.Length; i++)
-                {
-                    msg += parameters[i].ToString() + ", ";
-                }
-                Console.WriteLine(msg);
+                Console.WriteLine("Game: " + i + "/" + allGames.Count/**gameMultiplier*/);
             }
         }
 
@@ -167,7 +254,7 @@ namespace Tuner
 
                 Move[] moves = new Move[moveMatches.Count];
 
-                Console.WriteLine("Finished Loading");
+                //Console.WriteLine("Finished Loading");
 
                 board.board.LoadStartPosition();
 
@@ -369,7 +456,7 @@ namespace Tuner
             p.StandardInput.WriteLine(setupString);
 
             // Process for 5 seconds
-            string processString = "go movetime 900";
+            string processString = "go movetime 20";
 
             // Process 20 deep
             //string processString = "go depth 2";
@@ -378,7 +465,7 @@ namespace Tuner
 
             //Console.WriteLine("Started Stockfish");
 
-            Thread.Sleep(1000);
+            Thread.Sleep(50);
 
             //Console.WriteLine("Stopped Sleeping");
 
@@ -395,7 +482,7 @@ namespace Tuner
                 result += p.StandardOutput.ReadLine() + "\n";
             }
 
-            Console.WriteLine(result);
+            //Console.WriteLine(result);
 
             MatchCollection matches = Regex.Matches(result, "(-|\\+)?\\d+\\.\\d+");
             if (matches.Count == 0)

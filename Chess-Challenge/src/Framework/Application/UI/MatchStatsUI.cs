@@ -28,7 +28,7 @@ namespace ChessChallenge.Application
                 startPos.Y += spacingY * 2;
 
                 DrawStats(ChallengeController.BotStatsA);
-                DrawNextText("Average depth: " + (movesPlayed1==0 ? 0 : ((float)depthSum1 / movesPlayed1)), regularFontSize, col);
+                DrawNextText("Average depth: " + (movesPlayed1 == 0 ? 0 : ((float)depthSum1 / movesPlayed1)), regularFontSize, col);
                 startPos.Y += spacingY * 2;
                 DrawStats(ChallengeController.BotStatsB);
                 DrawNextText("Average depth: " + (movesPlayed2 == 0 ? 0 : ((float)depthSum2 / movesPlayed2)), regularFontSize, col);

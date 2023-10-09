@@ -58,7 +58,7 @@ namespace ChessChallenge.EvilBot4_5
                 depthCalculated = DEPTH; //#DEBUG
             MatchStatsUI.movesPlayed2++; //#DEBUG
             MatchStatsUI.depthSum2 += depthCalculated; //#DEBUG
-            Console.WriteLine("Evil: " + eval/-100f); //#DEBUG
+            Console.WriteLine("Evil: " + eval / -100f); //#DEBUG
             Console.WriteLine("Evil:    NotFound: " + notFoundCounter + "\tFound: " + foundCounter); //#DEBUG
             return bestRootMove;
         }
