@@ -182,7 +182,8 @@ public class EvilBot6_1 : IChessBot
             }
 
             // Out of time
-            if (timer.MillisecondsElapsedThisTurn >= timer.MillisecondsRemaining / 30)
+            if ((Settings.TimeForMove != 0 && timer.MillisecondsElapsedThisTurn > Settings.TimeForMove) //#DEBUG
+                || timer.MillisecondsElapsedThisTurn >= timer.MillisecondsRemaining / 30)
             {
                 eval = lastEval; //#DEBUG
                 break;

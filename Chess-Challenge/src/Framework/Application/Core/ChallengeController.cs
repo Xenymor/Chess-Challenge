@@ -1,4 +1,5 @@
-﻿using Chess_Challenge.src.Tier2;
+﻿using Chess_Challenge.src.EvilBot6_2;
+using Chess_Challenge.src.Tier2;
 using ChessChallenge.Chess;
 using Raylib_cs;
 using System;
@@ -21,7 +22,8 @@ namespace ChessChallenge.Application
             MyBot,
             EvilBot,
             Tier2,
-            EvilBot2
+            EvilBot2,
+            EvilBot2_0
         }
 
         // Game state
@@ -212,9 +214,10 @@ namespace ChessChallenge.Application
             return type switch
             {
                 PlayerType.MyBot => new ChessPlayer(new MyBot(), type, GameDurationMilliseconds),
-                PlayerType.EvilBot => new ChessPlayer(new EvilBot6_1(), type, GameDurationMilliseconds),
+                PlayerType.EvilBot => new ChessPlayer(new EvilBot6_2(), type, GameDurationMilliseconds),
                 PlayerType.Tier2 => new ChessPlayer(new Tier2(), type, GameDurationMilliseconds),
                 PlayerType.EvilBot2 => new ChessPlayer(new EvilBot2_2.EvilBot(), type, GameDurationMilliseconds),
+                PlayerType.EvilBot2_0 => new ChessPlayer(new EvilBot2_0.EvilBot2(), type, GameDurationMilliseconds),
                 _ => new ChessPlayer(new HumanPlayer(boardUI), type)
             };
         }
