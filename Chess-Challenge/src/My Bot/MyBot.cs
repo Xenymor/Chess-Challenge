@@ -42,7 +42,7 @@ public class MyBot : IChessBot
         return (int)(((psts[psq / 10] >> (6 * (psq % 10))) & 63) - 20) * 8;
     }
 
-    public int Evaluate(Board board)
+    public int Evaluate()
     {
         int middleGame = 0, endGame = 0, phase = 0;
         bool stm = true;
@@ -110,8 +110,8 @@ public class MyBot : IChessBot
                     ind = 128 * (piece - 1) + square ^ (stm ? 56 : 0); //#DEBUG
 
                     //Piece Square Values
-                    middleGame += getPstVal(ind) + parameters[piece+6]; //#DEBUG
-                    endGame += getPstVal(ind + 64) + parameters[piece+6]; //#DEBUG
+                    middleGame += getPstVal(ind) + parameters[piece + 6]; //#DEBUG
+                    endGame += getPstVal(ind + 64) + parameters[piece + 6]; //#DEBUG
 
                     //Mobility Bonus
                     if ((int)p >= 2 && (int)p <= 4) //#DEBUG
@@ -144,11 +144,14 @@ public class MyBot : IChessBot
         return (score * (board.IsWhiteToMove ? 1 : -1)); //#DEBUG
     } //#DEBUG
 
-    public int AlphaBeta(int alpha, int beta, int depth, int ply, int extension)
+    public int AlphaBeta(int alpha, int beta, int depth, int ply, int extension, bool doNullMoves)
     {
         ulong key = board.ZobristKey;
-        bool qsearch = depth <= 0;
-        bool notFirstCall = ply > 0;
+        bool qsearch = depth <= 0,
+            notFirstCall = ply > 0,
+            pvNode = beta - alpha > 1,
+            inCheck = board.IsInCheck(),
+            canFutilityPrune = false;
         int bestScore = -30000;
 
         if (notFirstCall && board.IsRepeatedPosition())
@@ -162,13 +165,31 @@ public class MyBot : IChessBot
                 || entry.bound == 1 && entry.score <= alpha
         )) return entry.score;
 
-        int eval = Evaluate(board);
+        int eval = Evaluate();
 
         if (qsearch)
         {
             bestScore = eval;
             if (bestScore >= beta) return bestScore;
             alpha = Math.Max(alpha, bestScore);
+        }
+        else if (!pvNode && !inCheck)
+        {
+            // Static eval calculation for pruning
+            int static_eval = Evaluate();
+
+            // Reverse Futility Pruning
+            if (static_eval - 85 * depth >= beta) return static_eval - 85 * depth;
+            // Null Move Pruning
+            if (doNullMoves && depth >= 2)
+            {
+                board.TrySkipTurn();
+                int score = -AlphaBeta(-beta, 1 - beta, depth - 3 - depth / 6, ply + 1, extension, false);
+                board.UndoSkipTurn();
+                if (score >= beta) return score;
+            }
+            // Futility Pruning Check
+            canFutilityPrune = depth <= 4 && static_eval + 40 + 60 * depth <= alpha && ply > 0;
         }
 
         Move[] moves = board.GetLegalMoves(qsearch);
@@ -179,7 +200,7 @@ public class MyBot : IChessBot
             Move move = moves[i];
             scores[i] = (move == entry.move ? 1_000_000 :
             (killers[ply].Contains(move.RawValue) ? 900_000 :
-            (move.IsCapture ? (100 * (int)move.CapturePieceType - (int)move.MovePieceType + (board.SquareIsAttackedByOpponent(move.TargetSquare) ? 100 : -100))
+            (move.IsCapture ? (100 * (int)move.CapturePieceType - (int)move.MovePieceType)
             : 0)));
         }
 
@@ -199,15 +220,16 @@ public class MyBot : IChessBot
                     (scores[i], scores[j], moves[i], moves[j]) = (scores[j], scores[i], moves[j], moves[i]);
             }
 
-            
-
             Move move = moves[i];
+            bool tactical = pvNode || move.IsCapture || move.IsPromotion || inCheck;
+            // Futility Pruning
+            if (canFutilityPrune && !tactical && i > 2) continue;
             board.MakeMove(move);
             int newExtension = qsearch ? 0 : (board.IsInCheck() ? 1 : ((move.MovePieceType == PieceType.Pawn && (move.TargetSquare.Rank == 6 || move.TargetSquare.Rank == 1)) ? 1 : 0));
-            int score = -AlphaBeta(-(alpha + 1), -alpha, depth - 1 + newExtension, ply + 1, newExtension + extension);
+            int score = -AlphaBeta(-(alpha + 1), -alpha, depth - 1 + newExtension, ply + 1, newExtension + extension, doNullMoves);
             if (score > alpha && score < beta)
             {
-                score = Math.Max(score, -AlphaBeta(-beta, -alpha, depth - 1 + newExtension, ply + 1, newExtension + extension));
+                score = Math.Max(score, -AlphaBeta(-beta, -alpha, depth - 1 + newExtension, ply + 1, newExtension + extension, doNullMoves));
             }
             board.UndoMove(move);
 
@@ -255,7 +277,7 @@ public class MyBot : IChessBot
         }
         while (calculatedDepth < 50)
         {
-            eval = AlphaBeta(alpha, beta, calculatedDepth, 0, 0);
+            eval = AlphaBeta(alpha, beta, calculatedDepth, 0, 0, true);
             if (eval <= alpha)
                 alpha -= 60;
             else if (eval >= beta)
@@ -286,7 +308,8 @@ public class MyBot : IChessBot
         if (v >= 100)
         {
             return "M" + (300 - v) / 10;
-        } else if (v <= -100)
+        }
+        else if (v <= -100)
         {
             return "M" + (-300 - v) / 10;
         }
