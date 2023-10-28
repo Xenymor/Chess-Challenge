@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace Tuner
 {
-    internal class PositionEvaluation
+    public class PositionEvaluation
     {
         public string fen { get; set; }
         public int eval { get; set; }
@@ -32,11 +32,11 @@ namespace Tuner
             MyBot bot = new MyBot();
             float[] parameters = { 21.537073f, 28.860802f, -5.7034264f, -21.147152f, 0, 0, 0, -9.241379f, 309.2178f, 410.36957f, 735.34515f, 647.4354f, 10000 };
             float[] parameterChanges = new float[parameters.Length];
-            string filePath = "positionTable1.json";
+            string filePath = "positionTable2.json";
 
             //Generate new File
-            
-            /*List<Move[]> allGames = getAllGames();
+
+            List<Move[]> allGames = getAllGames();
 
             Console.WriteLine("Finished Parsing");
 
@@ -45,16 +45,16 @@ namespace Tuner
             generateEvaluationArray(board, random, allGames, toSave, gameMultiplier);
 
             string jsonString = JsonSerializer.Serialize(toSave);
-            File.WriteAllText(filePath, jsonString);*/
-            
-            
+            File.WriteAllText(filePath, jsonString);
+
+
 
             //Train
 
-            PositionEvaluation[] allPositions = JsonSerializer.Deserialize<PositionEvaluation[]>(File.ReadAllText(filePath));
+            /*PositionEvaluation[] allPositions = JsonSerializer.Deserialize<PositionEvaluation[]>(File.ReadAllText(filePath));
             PositionEvaluation[] trainingPositions = new PositionEvaluation[allPositions.Length - 400];
             PositionEvaluation[] testPositions = new PositionEvaluation[400];
-            
+
             if (File.Exists(parameterFilePath))
             {
                 parameters = JsonSerializer.Deserialize<float[]>(File.ReadAllText(parameterFilePath));
@@ -76,12 +76,14 @@ namespace Tuner
             {
                 float oldEval, trueEval;
                 int counter = 0;
-                for (int i = 0; i < BATCH_SIZE; i++) {
-                    if ((iterations % trainingPositions.Length)+i > trainingPositions.Length) {
+                for (int i = 0; i < BATCH_SIZE; i++)
+                {
+                    if ((iterations % trainingPositions.Length) + i > trainingPositions.Length)
+                    {
                         break;
                     }
 
-                    prepareBoardAndGetEval(board, (iterations % trainingPositions.Length)+i, bot, parameters, trainingPositions, out oldEval, out trueEval);
+                    prepareBoardAndGetEval(board, (iterations % trainingPositions.Length) + i, bot, parameters, trainingPositions, out oldEval, out trueEval);
 
                     float dist = oldEval - trueEval;
                     float oldCost = dist * dist;
@@ -92,11 +94,11 @@ namespace Tuner
                 }
 
                 if (counter != 0)
-                for (int i = 0; i < parameters.Length; i++)
-                {
-                    parameters[i] += parameterChanges[i]/counter;
-                    parameterChanges[i] = 0;
-                }
+                    for (int i = 0; i < parameters.Length; i++)
+                    {
+                        parameters[i] += parameterChanges[i] / counter;
+                        parameterChanges[i] = 0;
+                    }
 
                 if (iterations % 40_000 == 0)
                 {
@@ -106,7 +108,7 @@ namespace Tuner
                 }
                 iterations++;
             }
-            OutputCurrentStandings(board, bot, parameters, testPositions);
+            OutputCurrentStandings(board, bot, parameters, testPositions);*/
         }
 
         private static void OutputCurrentStandings(Board board, MyBot bot, float[] parameters, PositionEvaluation[] testPositions)
@@ -118,7 +120,7 @@ namespace Tuner
                 board.board.LoadPosition(testPositions[i].fen);
                 if (bot.TunerEvaluate(board, parameters) == int.MinValue)
                     Console.WriteLine("Error");
-                distSum += Math.Abs(testPositions[i].eval - Math.Max(bot.TunerEvaluate(board, parameters), int.MinValue+1));
+                distSum += Math.Abs(testPositions[i].eval - Math.Max(bot.TunerEvaluate(board, parameters), int.MinValue + 1));
             }
             string msg = "\n";
             for (int i = 0; i < parameters.Length; i++)
@@ -168,11 +170,11 @@ namespace Tuner
             bool broke;
             int r;
             Move[] moves;
-            for (int i = 0; i < allGames.Count*gameMultiplier; i++)
+            for (int i = 0; i < allGames.Count * gameMultiplier; i++)
             {
                 broke = false;
                 board.board.LoadStartPosition();
-                Move[] game = allGames[i/gameMultiplier];
+                Move[] game = allGames[i / gameMultiplier];
                 r = random.Next(game.Length);
                 for (int j = 0; j < r; j++)
                 {
@@ -198,7 +200,8 @@ namespace Tuner
                 {
                     eval = getTrueEval(board);
                 }
-                else if(board.IsInCheckmate()) {
+                else if (board.IsInCheckmate())
+                {
                     eval = 30_000 * (board.IsWhiteToMove ? -1 : 1);
                 }
                 else
@@ -210,8 +213,8 @@ namespace Tuner
                     eval = eval,
                     fen = board.GetFenString()
                 };
-                if (i%100 == 0)
-                    Console.WriteLine("Game: " + i + "/" + allGames.Count*gameMultiplier);
+                if (i % 100 == 0)
+                    Console.WriteLine("Game: " + i + "/" + allGames.Count * gameMultiplier);
             }
         }
 
@@ -222,13 +225,13 @@ namespace Tuner
             Board board = new Board(tempBoard);
 
             // Replace "your-pgn-file.pgn" with the actual path to your PGN file
-            string pgnFilePath = "C:\\Users\\timon\\Documents\\Programmieren\\C#\\Chess-Challenge\\Tuner\\lichess_db_standard_rated_2013-01.pgn";//Magnus Carlsen-black.pgn";
+            string pgnFilePath = "C:\\Users\\timon\\Documents\\Programmieren\\C#\\Chess-Challenge\\NeuralNetworkEval\\bin\\Debug\\net7.0\\ficsgamesdb_2022_blitz2000_nomovetimes_308994.pgn";
 
             // Read the PGN file content
             string pgnContent = File.ReadAllText(pgnFilePath);
 
             // Define a regular expression pattern to match games
-            string gamePattern = @"\[(.*?)\]((?:(?!\[)[\s\S])*)";
+            string gamePattern = @"\[(.*?)\]\s*((?:(?!\{).)*)\s*\{[^}]*\}";
 
             // Use Regex to find all matches of games in the PGN content
             MatchCollection gameMatches = Regex.Matches(pgnContent, gamePattern);
@@ -266,6 +269,10 @@ namespace Tuner
                 for (int i = 0; i < moveMatches.Count; i++)
                 {
                     string moveString = moveMatches[i].Value;
+                    if (moveString.Equals("R1xd5"))
+                    {
+                        Console.WriteLine();
+                    }
                     Move[] allLegalMoves = board.GetLegalMoves();
                     bool isCapture = moveString.Contains("x");
                     bool isCastling = moveString.Contains("-");
@@ -326,7 +333,7 @@ namespace Tuner
                                 {
                                     targetSquare = new Square(FILE_NAMES.IndexOf(moveString[3]), int.Parse(moveString[4].ToString()) - 1);
                                     startFile = FILE_NAMES.IndexOf(char.ToLower(moveString[1]));
-                                    startRank = int.Parse(moveString[2].ToString())-1;
+                                    startRank = int.Parse(moveString[2].ToString()) - 1;
                                 }
                             }
                             else
@@ -334,7 +341,7 @@ namespace Tuner
                                 if (char.IsLetter(moveString[0]) && char.IsDigit(moveString[1]) && char.IsLetter(moveString[3]))
                                 {
                                     targetSquare = new Square(FILE_NAMES.IndexOf(moveString[3]), int.Parse(moveString[4].ToString()) - 1);
-                                    startFile = int.Parse(moveString[1].ToString()) - 1;
+                                    startRank = int.Parse(moveString[1].ToString()) - 1;
                                 }
                                 if (moveString.Length >= 4 && char.IsLetter(moveString[1]) && char.IsDigit(moveString[2]) && char.IsLetter(moveString[4]))
                                 {
@@ -475,7 +482,7 @@ namespace Tuner
             p.StandardInput.WriteLine(setupString);
 
             // Process for 10 milliseconds
-            string processString = "go movetime 10";
+            string processString = "go movetime 5";
 
             // Process 20 deep
             //string processString = "go depth 2";
@@ -484,13 +491,13 @@ namespace Tuner
 
             //Console.WriteLine("Started Stockfish");
 
-            Thread.Sleep(20);
+            Thread.Sleep(10);
 
             //Console.WriteLine("Stopped Sleeping");
 
             p.StandardInput.WriteLine("eval");
 
-            Thread.Sleep(20);
+            Thread.Sleep(10);
 
             p.StandardInput.WriteLine("quit");
 
