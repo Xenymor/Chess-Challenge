@@ -262,7 +262,7 @@ namespace Chess_Challenge.src.EvilBot6_3
                     break;
                 }
             }
-            Console.WriteLine("MyBot: " + EvalToString(eval / -100f) + ";\tDepth: " + calculatedDepth); //#DEBUG
+            Console.WriteLine("EvilBot: " + EvalToString(eval / -100f) + ";\tDepth: " + calculatedDepth); //#DEBUG
             MatchStatsUI.depthSum1 += calculatedDepth; //#DEBUG
             MatchStatsUI.movesPlayed1++; //#DEBUG
             return bestRootMove.IsNull ? board.GetLegalMoves()[0] : bestRootMove;
