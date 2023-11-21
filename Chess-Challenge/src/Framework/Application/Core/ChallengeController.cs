@@ -23,7 +23,9 @@ namespace ChessChallenge.Application
             EvilBot,
             Tier2,
             EvilBot2,
-            EvilBot2_0
+            EvilBot2_0,
+            MyBotNN,
+            MyBotNN2
         }
 
         // Game state
@@ -214,6 +216,8 @@ namespace ChessChallenge.Application
             return type switch
             {
                 PlayerType.MyBot => new ChessPlayer(new MyBot(), type, GameDurationMilliseconds),
+                PlayerType.MyBotNN => new ChessPlayer(new MyBotNeuralNetwork(), type, GameDurationMilliseconds),
+                PlayerType.MyBotNN2 => new ChessPlayer(new MyBotNeuralNetwork2(), type, GameDurationMilliseconds),
                 PlayerType.EvilBot => new ChessPlayer(new EvilBot6_2(), type, GameDurationMilliseconds),
                 PlayerType.Tier2 => new ChessPlayer(new Tier2(), type, GameDurationMilliseconds),
                 PlayerType.EvilBot2 => new ChessPlayer(new EvilBot2_2.EvilBot(), type, GameDurationMilliseconds),

@@ -32,26 +32,26 @@ namespace Tuner
             MyBot bot = new MyBot();
             float[] parameters = { 21.537073f, 28.860802f, -5.7034264f, -21.147152f, 0, 0, 0, -9.241379f, 309.2178f, 410.36957f, 735.34515f, 647.4354f, 10000 };
             float[] parameterChanges = new float[parameters.Length];
-            string filePath = "positionTable2.json";
+            string filePath = "positionTable4.json";
 
             //Generate new File
 
-            List<Move[]> allGames = getAllGames();
+            /*List<Move[]> allGames = getAllGames();
 
             Console.WriteLine("Finished Parsing");
 
             int gameMultiplier = 3;
-            PositionEvaluation[] toSave = new PositionEvaluation[allGames.Count*gameMultiplier];
+            PositionEvaluation[] toSave = new PositionEvaluation[allGames.Count * gameMultiplier];
             generateEvaluationArray(board, random, allGames, toSave, gameMultiplier);
 
             string jsonString = JsonSerializer.Serialize(toSave);
-            File.WriteAllText(filePath, jsonString);
+            File.WriteAllText(filePath, jsonString);*/
 
 
 
             //Train
 
-            /*PositionEvaluation[] allPositions = JsonSerializer.Deserialize<PositionEvaluation[]>(File.ReadAllText(filePath));
+            PositionEvaluation[] allPositions = JsonSerializer.Deserialize<PositionEvaluation[]>(File.ReadAllText(filePath));
             PositionEvaluation[] trainingPositions = new PositionEvaluation[allPositions.Length - 400];
             PositionEvaluation[] testPositions = new PositionEvaluation[400];
 
@@ -108,7 +108,7 @@ namespace Tuner
                 }
                 iterations++;
             }
-            OutputCurrentStandings(board, bot, parameters, testPositions);*/
+            OutputCurrentStandings(board, bot, parameters, testPositions);
         }
 
         private static void OutputCurrentStandings(Board board, MyBot bot, float[] parameters, PositionEvaluation[] testPositions)
@@ -225,7 +225,7 @@ namespace Tuner
             Board board = new Board(tempBoard);
 
             // Replace "your-pgn-file.pgn" with the actual path to your PGN file
-            string pgnFilePath = "C:\\Users\\timon\\Documents\\Programmieren\\C#\\Chess-Challenge\\NeuralNetworkEval\\bin\\Debug\\net7.0\\ficsgamesdb_2022_blitz2000_nomovetimes_308994.pgn";
+            string pgnFilePath = "C:\\Users\\timon\\Documents\\Programmieren\\C#\\Chess-Challenge\\Tuner\\lichess_db_standard_rated_2013-01.pgn";
 
             // Read the PGN file content
             string pgnContent = File.ReadAllText(pgnFilePath);
@@ -520,7 +520,7 @@ namespace Tuner
             //Console.WriteLine("Got Stockfish Eval: " + float.Parse(evalText));
 
             p.Close();
-            return (int)Math.Round(float.Parse(evalText));
+            return (int)Math.Round(float.Parse(evalText)) * (board.IsWhiteToMove ? 1 : -1);
         }
     }
 }

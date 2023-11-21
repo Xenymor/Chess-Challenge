@@ -1,5 +1,6 @@
 ﻿using ChessChallenge.API;
 using ChessChallenge.Application;
+using NeuralNetworkEval;
 using System;
 using System.Collections.Generic;
 
@@ -26,7 +27,7 @@ public class MyBot : IChessBot
     ulong[] psts = { 657614902731556116, 420894446315227099, 384592972471695068, 312245244820264086, 364876803783607569, 366006824779723922, 366006826859316500, 786039115310605588, 421220596516513823, 366011295806342421, 366006826859316436, 366006896669578452, 162218943720801556, 440575073001255824, 657087419459913430, 402634039558223453, 347425219986941203, 365698755348489557, 311382605788951956, 147850316371514514, 329107007234708689, 402598430990222677, 402611905376114006, 329415149680141460, 257053881053295759, 291134268204721362, 492947507967247313, 367159395376767958, 384021229732455700, 384307098409076181, 402035762391246293, 328847661003244824, 365712019230110867, 366002427738801364, 384307168185238804, 347996828560606484, 329692156834174227, 365439338182165780, 386018218798040211, 456959123538409047, 347157285952386452, 365711880701965780, 365997890021704981, 221896035722130452, 384289231362147538, 384307167128540502, 366006826859320596, 366006826876093716, 366002360093332756, 366006824694793492, 347992428333053139, 457508666683233428, 329723156783776785, 329401687190893908, 366002356855326100, 366288301819245844, 329978030930875600, 420621693221156179, 422042614449657239, 384602117564867863, 419505151144195476, 366274972473194070, 329406075454444949, 275354286769374224, 366855645423297932, 329991151972070674, 311105941360174354, 256772197720318995, 365993560693875923, 258219435335676691, 383730812414424149, 384601907111998612, 401758895947998613, 420612834953622999, 402607438610388375, 329978099633296596, 67159620133902 };
     HashSet<ushort>[] killers = new HashSet<ushort>[70];
 
-    Board board;
+    public Board board;
     Timer timer;
 
     public MyBot()
@@ -35,6 +36,10 @@ public class MyBot : IChessBot
         {
             killers[i] = new HashSet<ushort>();
         }
+        if (this.GetType() == typeof(MyBotNeuralNetwork2)) //#DEBUG
+        {
+            NeuralNetworkEvaluator2.Load("C:\\Users\\timon\\Documents\\Programmieren\\C#\\Chess-Challenge\\Chess-Challenge\\src\\NeuralNetworkEval2\\NeuralNetwork.nn"); //#DEBUG
+        }
     }
 
     public int getPstVal(int psq)
@@ -42,6 +47,7 @@ public class MyBot : IChessBot
         return (int)(((psts[psq / 10] >> (6 * (psq % 10))) & 63) - 20) * 8;
     }
 
+    virtual
     public int Evaluate()
     {
         int middleGame = 0, endGame = 0, phase = 0;
@@ -101,12 +107,12 @@ public class MyBot : IChessBot
         { //#DEBUG
             for (var p = PieceType.Pawn; p <= PieceType.King; p++) //#DEBUG
             { //#DEBUG
-                int piece = (int)p, ind; //#DEBUG
+                int piece = (int)p, ind, square; //#DEBUG
                 ulong mask = board.GetPieceBitboard(p, stm); //#DEBUG
                 while (mask != 0) //#DEBUG
                 { //#DEBUG
                     phase += piecePhase[piece]; //#DEBUG
-                    int square = BitboardHelper.ClearAndGetIndexOfLSB(ref mask); //#DEBUG
+                    square = BitboardHelper.ClearAndGetIndexOfLSB(ref mask); //#DEBUG
                     ind = 128 * (piece - 1) + square ^ (stm ? 56 : 0); //#DEBUG
 
                     //Piece Square Values
@@ -148,9 +154,9 @@ public class MyBot : IChessBot
     {
         ulong key = board.ZobristKey;
         bool qsearch = depth <= 0,
+            inCheck = board.IsInCheck(),
             notFirstCall = ply > 0,
             pvNode = beta - alpha > 1,
-            inCheck = board.IsInCheck(),
             canFutilityPrune = false;
         int bestScore = -30000;
 
@@ -175,11 +181,8 @@ public class MyBot : IChessBot
         }
         else if (!pvNode && !inCheck)
         {
-            // Static eval calculation for pruning
-            int static_eval = Evaluate();
-
             // Reverse Futility Pruning
-            if (static_eval - 85 * depth >= beta) return static_eval - 85 * depth;
+            if (eval - 85 * depth >= beta) return eval - 85 * depth;
             // Null Move Pruning
             if (doNullMoves && depth >= 2)
             {
@@ -189,7 +192,7 @@ public class MyBot : IChessBot
                 if (score >= beta) return score;
             }
             // Futility Pruning Check
-            canFutilityPrune = depth <= 4 && static_eval + 40 + 60 * depth <= alpha && ply > 0;
+            canFutilityPrune = depth <= 4 && eval + 40 + 120 * depth <= alpha && ply > 0;
         }
 
         Move[] moves = board.GetLegalMoves(qsearch);
@@ -223,7 +226,7 @@ public class MyBot : IChessBot
             Move move = moves[i];
             bool tactical = pvNode || move.IsCapture || move.IsPromotion || inCheck;
             // Futility Pruning
-            if (canFutilityPrune && !tactical && i > 2) continue;
+            if (canFutilityPrune && !tactical && i > 4) continue;
             board.MakeMove(move);
             int newExtension = qsearch ? 0 : (board.IsInCheck() ? 1 : ((move.MovePieceType == PieceType.Pawn && (move.TargetSquare.Rank == 6 || move.TargetSquare.Rank == 1)) ? 1 : 0));
             int score = -AlphaBeta(-(alpha + 1), -alpha, depth - 1 + newExtension, ply + 1, newExtension + extension, doNullMoves);
@@ -271,9 +274,12 @@ public class MyBot : IChessBot
         int eval = lastEval;
         int alpha = eval - 25;
         int beta = eval + 25;
-        for (int i = 0; i < killers.Length; i++)
+        for (int i = killers.Length - 1; i >= 0; i--)
         {
-            killers[i].Clear();
+            if (i == 0)
+                killers[i] = new HashSet<ushort>();
+            else
+                killers[i] = killers[i-1];
         }
         while (calculatedDepth < 50)
         {
@@ -297,9 +303,18 @@ public class MyBot : IChessBot
                 break;
             }
         }
-        Console.WriteLine("MyBot: " + EvalToString(eval / 100f) + ";\tDepth: " + calculatedDepth); //#DEBUG
-        MatchStatsUI.depthSum1 += calculatedDepth; //#DEBUG
-        MatchStatsUI.movesPlayed1++; //#DEBUG
+        if (this.GetType() == typeof(MyBotNeuralNetwork)) //#DEBUG
+        {
+            MatchStatsUI.depthSum2 += calculatedDepth; //#DEBUG
+            MatchStatsUI.movesPlayed2++; //#DEBUG
+            Console.WriteLine("MyBotNN: " + EvalToString(eval / -100f) + ";\tDepth: " + calculatedDepth); //#DEBUG
+        } //#DEBUG
+        else //#DEBUG
+        { //#DEBUG
+            MatchStatsUI.depthSum1 += calculatedDepth; //#DEBUG
+            MatchStatsUI.movesPlayed1++; //#DEBUG
+            Console.WriteLine("MyBot: " + EvalToString(eval / 100f) + ";\tDepth: " + calculatedDepth); //#DEBUG
+        } //#DEBUG
         return bestRootMove.IsNull ? board.GetLegalMoves()[0] : bestRootMove;
     }
 
