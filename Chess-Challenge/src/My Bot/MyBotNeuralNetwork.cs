@@ -3,9 +3,9 @@ using NeuralNetworkEval;
 
 public class MyBotNeuralNetwork : MyBot
 {
-    override
+    /*override
     public int Evaluate(Board board)
     {
         return NeuralNetworkEvaluator.Evaluate(board);
-    }
+    }*/
 }

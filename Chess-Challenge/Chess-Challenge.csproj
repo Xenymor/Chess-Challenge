@@ -27,6 +27,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Update="src\My Bot\Tyrant.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
     <Compile Update="src\My Bot\MyBot.cs">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Compile>

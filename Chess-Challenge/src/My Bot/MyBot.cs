@@ -139,11 +139,13 @@ public class MyBot : IChessBot
         return (int)(score * (board.IsWhiteToMove ? 1 : -1)); //#DEBUG
     } //#DEBUG
 
-    public int AlphaBeta(int alpha, int beta, int depth, int ply, int extension)
+    public int AlphaBeta(int alpha, int beta, int depth, int ply)
     {
         ulong key = board.ZobristKey;
-        bool qsearch = depth <= 0;
-        bool notFirstCall = ply > 0;
+        bool qSearch = depth <= 0,
+        notFirstCall = ply > 0,
+        inCheck = board.IsInCheck(),
+        canFutilityPrune = false;
         int bestScore = -30000;
 
         if (notFirstCall && board.IsRepeatedPosition())
@@ -159,27 +161,37 @@ public class MyBot : IChessBot
 
         int eval = Evaluate(board);
 
-        if (qsearch)
+        if (qSearch)
         {
             bestScore = eval;
             if (bestScore >= beta) return bestScore;
             alpha = Math.Max(alpha, bestScore);
         }
 
-        Move[] moves = board.GetLegalMoves(qsearch);
+        Move[] moves = board.GetLegalMoves(qSearch);
         int[] scores = new int[moves.Length];
 
         for (int i = 0; i < moves.Length; i++)
         {
             Move move = moves[i];
-            scores[i] = (move == entry.move ? 1_000_000 :
-            killers[ply] == move.RawValue ? 900_000 :
-            move.IsCapture ? 100 * (int)move.CapturePieceType - (int)move.MovePieceType
+            scores[i] = (move == entry.move ? 10_000_000 :
+            killers[ply] == move.RawValue ? 9_000_000 :
+            move.IsCapture ? 1_000_000 * (int)move.CapturePieceType - (int)move.MovePieceType
             : 0);
         }
 
         Move bestMove = Move.NullMove;
         int origAlpha = alpha;
+
+
+        if (!qSearch && !inCheck)
+        {
+            //Reverse Futility Pruning
+            if (depth <= 7 && eval - 74 * depth >= beta)
+                return eval;
+
+            canFutilityPrune = depth <= 8 && eval + depth * 141 <= alpha;
+        }
 
         for (int i = 0; i < moves.Length; i++)
         {
@@ -196,11 +208,16 @@ public class MyBot : IChessBot
 
             Move move = moves[i];
             board.MakeMove(move);
-            int newExtension = qsearch ? 0 : (board.IsInCheck() ? 1 : ((move.MovePieceType == PieceType.Pawn && (move.TargetSquare.Rank == 6 || move.TargetSquare.Rank == 1)) ? 1 : 0));
-            int score = -AlphaBeta(-(alpha + 1), -alpha, depth - 1 + newExtension, ply + 1, newExtension + extension);
+            if (i > 0 && canFutilityPrune && !(board.IsInCheck() || move.IsCapture))
+            {
+                board.UndoMove(move);
+                continue;
+            }
+            int newExtension = qSearch ? 0 : (board.IsInCheck() ? 1 : ((move.MovePieceType == PieceType.Pawn && (move.TargetSquare.Rank == 6 || move.TargetSquare.Rank == 1)) ? 1 : 0));
+            int score = -AlphaBeta(-(alpha + 1), -alpha, depth - 1 + newExtension, ply + 1);
             if (score > alpha && score < beta)
             {
-                score = Math.Max(score, -AlphaBeta(-beta, -alpha, depth - 1 + newExtension, ply + 1, newExtension + extension));
+                score = Math.Max(score, -AlphaBeta(-beta, -alpha, depth - 1 + newExtension, ply + 1));
             }
             board.UndoMove(move);
 
@@ -217,7 +234,7 @@ public class MyBot : IChessBot
             }
         }
 
-        if (!qsearch && moves.Length == 0) return board.IsInCheck() ? -30_000 + ply * 1000 : 0;
+        if (!qSearch && moves.Length == 0) return board.IsInCheck() ? -30_000 + ply * 1000 : 0;
 
         int bound = bestScore >= beta ? 2 : bestScore > origAlpha ? 3 : 1;
 
@@ -243,13 +260,13 @@ public class MyBot : IChessBot
         this.board = board;
         this.timer = timer;
         bestRootMove = Move.NullMove;
-        int calculatedDepth = 0;
+        int calculatedDepth = 2;
         int eval = lastEval;
         int alpha = eval - 25;
         int beta = eval + 25;
         while (calculatedDepth < 50)
         {
-            eval = AlphaBeta(alpha, beta, calculatedDepth, 0, 0);
+            eval = AlphaBeta(alpha, beta, calculatedDepth, 0);
             if (eval <= alpha)
                 alpha -= 60;
             else if (eval >= beta)
