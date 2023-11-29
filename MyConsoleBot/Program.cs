@@ -1,16 +1,20 @@
-﻿using Chess_Challenge.src.EvilBot6_6;
+﻿using Chess_Challenge.src.EvilBot6_3;
 using ChessChallenge.API;
-using ChessChallenge.Example;
-
+using System.Reflection;
 
 static class Program
 {
     public static void Main()
     {
-        IChessBot bot = new EvilBot6_6();
+        IChessBot bot = new MyBot();
+        Type botType = bot.GetType();
         ChessChallenge.Chess.Board tempBoard = new ChessChallenge.Chess.Board();
         tempBoard.LoadStartPosition();
         Board board = new Board(tempBoard);
+        float[] parameters = new float[]        { 0, 100, 310, 330, 500, 1000, 10000, 1, 2,    23,   62,  15, 30};
+        List<String> parameterNames = new List<String>();
+        bool isTuning = false;
+        parameterNames.AddRange(new string[] { "", "PV", "NV", "BV", "RV", "QV", "KV", "MM", "ME", "BPM", "BPE", "DM", "DE" });
         while (true)
         {
             string command = Console.ReadLine();
@@ -27,7 +31,7 @@ static class Program
                     break;
 
                 case "ucinewgame":
-                    bot = new EvilBot6_6();
+                    bot = (IChessBot)botType.GetConstructor(new Type[] { true.GetType() }).Invoke(new object[] { false });
                     tempBoard = new ChessChallenge.Chess.Board();
                     tempBoard.LoadStartPosition();
                     board = new Board(tempBoard);
@@ -70,10 +74,23 @@ static class Program
                     }
 
                     // Call engine to calculate and return best move
-                    string bestMoveString = bot.Think(board, new ChessChallenge.API.Timer(board.IsWhiteToMove ? wtime : btime)).ToString();
+                    string bestMoveString;
+                    if (!isTuning)
+                        bestMoveString = bot.Think(board, new ChessChallenge.API.Timer(board.IsWhiteToMove ? wtime : btime)).ToString();
+                    else
+                        bestMoveString = ((MyBot)bot).Think(board, new ChessChallenge.API.Timer(board.IsWhiteToMove ? wtime : btime), parameters).ToString();
                     string bestMoveFormattedString = bestMoveString.Substring(7, bestMoveString.Length - 8);
 
                     Console.WriteLine("bestmove " + bestMoveFormattedString);
+                    break;
+
+                case "setvalue":
+                    if (!isTuning)
+                    {
+                        bot = (IChessBot)botType.GetConstructor(new Type[] { false.GetType() }).Invoke(new object[] { true });
+                        isTuning = true;
+                    }
+                    parameters[parameterNames.IndexOf(tokens[1])] = float.Parse(tokens[2]);
                     break;
 
                 default:

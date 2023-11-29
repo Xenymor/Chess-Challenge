@@ -3,10 +3,11 @@ using ChessChallenge.Application;
 using System;
 using System.Diagnostics;
 
-namespace Chess_Challenge.src.EvilBot6_4
+namespace Chess_Challenge.src.EvilBot6_6
 {
-    public class EvilBot6_4 : IChessBot
+    public class EvilBot6_6 : IChessBot
     {
+
         Move bestRootMove = Move.NullMove;
 
         struct TTEntry
@@ -36,7 +37,7 @@ namespace Chess_Challenge.src.EvilBot6_4
             return (int)(((psts[psq / 10] >> (6 * (psq % 10))) & 63) - 20) * 8;
         }
 
-        virtual public int Evaluate(Board board)
+        public int Evaluate()
         {
             int middleGame = 0, endGame = 0, phase = 0;
             bool stm = true;
@@ -89,58 +90,7 @@ namespace Chess_Challenge.src.EvilBot6_4
             return score * (board.IsWhiteToMove ? 1 : -1);
         }
 
-        public int TunerEvaluate(Board board, float[] parameters) //#DEBUG
-        {
-            float middleGame = 0, endGame = 0, phase = 0; //#DEBUG
-            bool stm = true; //#DEBUG
-            do //#DEBUG
-            { //#DEBUG
-                for (var p = PieceType.Pawn; p <= PieceType.King; p++) //#DEBUG
-                { //#DEBUG
-                    int piece = (int)p, ind; //#DEBUG
-                    ulong mask = board.GetPieceBitboard(p, stm); //#DEBUG
-                    while (mask != 0) //#DEBUG
-                    { //#DEBUG
-                        phase += piecePhase[piece]; //#DEBUG
-                        int square = BitboardHelper.ClearAndGetIndexOfLSB(ref mask); //#DEBUG
-                        ind = 128 * (piece - 1) + square ^ (stm ? 56 : 0); //#DEBUG
-
-                        //Piece Square Values
-                        middleGame += getPstVal(ind) + parameters[piece + 6]; //#DEBUG
-                        endGame += getPstVal(ind + 64) + parameters[piece + 6]; //#DEBUG
-
-                        //Mobility Bonus
-                        if ((int)p >= 2 && (int)p <= 4) //#DEBUG
-                        { //#DEBUG
-                            int bonus = BitboardHelper.GetNumberOfSetBits(BitboardHelper.GetPieceAttacks((PieceType)piece + 1, new Square(square), board, stm)); //#DEBUG
-                            middleGame += bonus * parameters[2]; //#DEBUG
-                            endGame += bonus * parameters[3]; //#DEBUG
-                        } //#DEBUG
-
-                        // Bishop pair bonus
-                        if (piece == 2 && mask != 0) //#DEBUG
-                        { //#DEBUG
-                            middleGame += parameters[0]; //#DEBUG
-                            endGame += parameters[1]; //#DEBUG
-                        } //#DEBUG
-
-                        // Doubled pawns penalty
-                        if (piece == 0 && (0x101010101010101UL << (square & 7) & mask) > 0) //#DEBUG
-                        { //#DEBUG
-                            middleGame -= parameters[4]; //#DEBUG
-                            endGame -= parameters[5]; //#DEBUG
-                        } //#DEBUG
-                    } //#DEBUG
-                } //#DEBUG
-                middleGame = -middleGame; //#DEBUG
-                endGame = -endGame; //#DEBUG
-                stm = !stm; //#DEBUG
-            } while (!stm); //#DEBUG
-            float score = ((middleGame * phase + endGame * (24 - phase)) / 24) + 16; //#DEBUG
-            return (int)(score * (board.IsWhiteToMove ? 1 : -1)); //#DEBUG
-        } //#DEBUG
-
-        public int AlphaBeta(int alpha, int beta, int depth, int ply, int extension)
+        public int AlphaBeta(int alpha, int beta, int depth, int ply)
         {
             ulong key = board.ZobristKey;
             bool qSearch = depth <= 0,
@@ -160,7 +110,7 @@ namespace Chess_Challenge.src.EvilBot6_4
                     || entry.bound == 1 && entry.score <= alpha
             )) return entry.score;
 
-            int eval = Evaluate(board);
+            int eval = Evaluate();
 
             if (qSearch)
             {
@@ -169,43 +119,41 @@ namespace Chess_Challenge.src.EvilBot6_4
                 alpha = Math.Max(alpha, bestScore);
             }
 
-            Move[] moves = board.GetLegalMoves(qSearch);
-            int[] scores = new int[moves.Length];
+            Span<Move> moveSpan = stackalloc Move[218];
+            board.GetLegalMovesNonAlloc(ref moveSpan, qSearch && !inCheck);
+            int[] scores = new int[moveSpan.Length];
 
-            for (int i = 0; i < moves.Length; i++)
+            for (int i = 0; i < moveSpan.Length; i++)
             {
-                Move move = moves[i];
-                scores[i] = (move == entry.move ? 10_000_000 :
-                killers[ply] == move.RawValue ? 9_000_000 :
-                move.IsCapture ? 1_000_000 * (int)move.CapturePieceType - (int)move.MovePieceType
-                : 0);
+                Move move = moveSpan[i];
+                scores[i] = move == entry.move ? -10_000_000 :
+                killers[ply] == move.RawValue ? -9_000_000 :
+                move.IsCapture ? -1_000_000 * (int)move.CapturePieceType + (int)move.MovePieceType
+                : 0;
             }
+
+            scores.AsSpan(0, moveSpan.Length).Sort(moveSpan);
 
             Move bestMove = Move.NullMove;
             int origAlpha = alpha;
 
-
             if (!qSearch && !inCheck)
             {
+                //Reverse Futility Pruning
                 if (depth <= 7 && eval - 74 * depth >= beta)
                     return eval;
+
                 canFutilityPrune = depth <= 8 && eval + depth * 141 <= alpha;
             }
 
-            for (int i = 0; i < moves.Length; i++)
+            for (int i = 0; i < moveSpan.Length; i++)
             {
                 if (
                     (Settings.TimeForMove != 0 && timer.MillisecondsElapsedThisTurn >= Settings.TimeForMove)//#DEBUG
                     || (Settings.TimeForMove == 0 && //#DEBUG
                     timer.MillisecondsElapsedThisTurn >= timer.MillisecondsRemaining / 30)) return 30000;
 
-                for (int j = i + 1; j < moves.Length; j++)
-                {
-                    if (scores[j] > scores[i])
-                        (scores[i], scores[j], moves[i], moves[j]) = (scores[j], scores[i], moves[j], moves[i]);
-                }
-
-                Move move = moves[i];
+                Move move = moveSpan[i];
                 board.MakeMove(move);
                 if (i > 0 && canFutilityPrune && !(board.IsInCheck() || move.IsCapture))
                 {
@@ -213,10 +161,10 @@ namespace Chess_Challenge.src.EvilBot6_4
                     continue;
                 }
                 int newExtension = qSearch ? 0 : (board.IsInCheck() ? 1 : ((move.MovePieceType == PieceType.Pawn && (move.TargetSquare.Rank == 6 || move.TargetSquare.Rank == 1)) ? 1 : 0));
-                int score = -AlphaBeta(-(alpha + 1), -alpha, depth - 1 + newExtension, ply + 1, newExtension + extension);
+                int score = -AlphaBeta(-(alpha + 1), -alpha, depth - 1 + newExtension, ply + 1);
                 if (score > alpha && score < beta)
                 {
-                    score = Math.Max(score, -AlphaBeta(-beta, -alpha, depth - 1 + newExtension, ply + 1, newExtension + extension));
+                    score = Math.Max(score, -AlphaBeta(-beta, -alpha, depth - 1 + newExtension, ply + 1));
                 }
                 board.UndoMove(move);
 
@@ -233,7 +181,7 @@ namespace Chess_Challenge.src.EvilBot6_4
                 }
             }
 
-            if (!qSearch && moves.Length == 0) return board.IsInCheck() ? -30_000 + ply * 1000 : 0;
+            if (!qSearch && moveSpan.Length == 0) return inCheck ? -30_000 + ply * 1000 : 0;
 
             int bound = bestScore >= beta ? 2 : bestScore > origAlpha ? 3 : 1;
 
@@ -265,7 +213,7 @@ namespace Chess_Challenge.src.EvilBot6_4
             int beta = eval + 25;
             while (calculatedDepth < 50)
             {
-                eval = AlphaBeta(alpha, beta, calculatedDepth, 0, 0);
+                eval = AlphaBeta(alpha, beta, calculatedDepth, 0);
                 if (eval <= alpha)
                     alpha -= 60;
                 else if (eval >= beta)

@@ -6,6 +6,12 @@ using System.Collections.Generic;
 
 public class MyBot : IChessBot
 {
+    bool isTuning;
+    public MyBot(bool isTuning = false)
+    {
+        this.isTuning = isTuning;
+    }
+
     Move bestRootMove = Move.NullMove;
 
     struct TTEntry
@@ -35,7 +41,7 @@ public class MyBot : IChessBot
         return (int)(((psts[psq / 10] >> (6 * (psq % 10))) & 63) - 20) * 8;
     }
 
-    virtual public int Evaluate(Board board)
+    public int Evaluate()
     {
         int middleGame = 0, endGame = 0, phase = 0;
         bool stm = true;
@@ -87,59 +93,62 @@ public class MyBot : IChessBot
         int score = ((middleGame * phase + endGame * (24 - phase)) / 24) + 16;
         return score * (board.IsWhiteToMove ? 1 : -1);
     }
-
     public int TunerEvaluate(Board board, float[] parameters) //#DEBUG
     {
-        float middleGame = 0, endGame = 0, phase = 0; //#DEBUG
-        bool stm = true; //#DEBUG
-        do //#DEBUG
-        { //#DEBUG
-            for (var p = PieceType.Pawn; p <= PieceType.King; p++) //#DEBUG
-            { //#DEBUG
-                int piece = (int)p, ind; //#DEBUG
-                ulong mask = board.GetPieceBitboard(p, stm); //#DEBUG
-                while (mask != 0) //#DEBUG
-                { //#DEBUG
-                    phase += piecePhase[piece]; //#DEBUG
-                    int square = BitboardHelper.ClearAndGetIndexOfLSB(ref mask); //#DEBUG
-                    ind = 128 * (piece - 1) + square ^ (stm ? 56 : 0); //#DEBUG
+        float middleGame = 0, endGame = 0;
+        int phase = 0;
+        bool stm = true;
+        do
+        {
+            for (var p = PieceType.Pawn; p <= PieceType.King; p++)
+            {
+                int piece = (int)p, ind;
+                ulong mask = board.GetPieceBitboard(p, stm);
+                while (mask != 0)
+                {
+                    phase += piecePhase[piece];
+                    int square = BitboardHelper.ClearAndGetIndexOfLSB(ref mask);
+                    ind = 128 * (piece - 1) + square ^ (stm ? 56 : 0);
 
                     //Piece Square Values
-                    middleGame += getPstVal(ind) + parameters[piece + 6]; //#DEBUG
-                    endGame += getPstVal(ind + 64) + parameters[piece + 6]; //#DEBUG
+                    middleGame += (int)Math.Round(getPstVal(ind) + parameters[piece]);
+                    endGame += (int)Math.Round(getPstVal(ind + 64) + parameters[piece]);
+
+                    int rank = square & 7;
 
                     //Mobility Bonus
-                    if ((int)p >= 2 && (int)p <= 4) //#DEBUG
-                    { //#DEBUG
-                        int bonus = BitboardHelper.GetNumberOfSetBits(BitboardHelper.GetPieceAttacks((PieceType)piece + 1, new Square(square), board, stm)); //#DEBUG
-                        middleGame += bonus * parameters[2]; //#DEBUG
-                        endGame += bonus * parameters[3]; //#DEBUG
-                    } //#DEBUG
+                    if ((int)p >= 2 && (int)p <= 4)
+                    {
+                        int bonus = BitboardHelper.GetNumberOfSetBits(BitboardHelper.GetPieceAttacks((PieceType)piece + 1, new Square(square), board, stm));
+                        middleGame += bonus * parameters[7];
+                        endGame += bonus * parameters[8];
+                    }
 
                     // Bishop pair bonus
-                    if (piece == 2 && mask != 0) //#DEBUG
-                    { //#DEBUG
-                        middleGame += parameters[0]; //#DEBUG
-                        endGame += parameters[1]; //#DEBUG
-                    } //#DEBUG
+                    if (piece == 2 && mask != 0)
+                    {
+                        middleGame += parameters[9];
+                        endGame += parameters[10];
+                    }
 
                     // Doubled pawns penalty
-                    if (piece == 0 && (0x101010101010101UL << (square & 7) & mask) > 0) //#DEBUG
-                    { //#DEBUG
-                        middleGame -= parameters[4]; //#DEBUG
-                        endGame -= parameters[5]; //#DEBUG
-                    } //#DEBUG
-                } //#DEBUG
-            } //#DEBUG
-            middleGame = -middleGame; //#DEBUG
-            endGame = -endGame; //#DEBUG
-            stm = !stm; //#DEBUG
-        } while (!stm); //#DEBUG
-        float score = ((middleGame * phase + endGame * (24 - phase)) / 24) + 16; //#DEBUG
-        return (int)(score * (board.IsWhiteToMove ? 1 : -1)); //#DEBUG
-    } //#DEBUG
+                    if (piece == 0 && ((0x101010101010101UL << rank) & mask) > 0)
+                    {
+                        middleGame -= parameters[11];
+                        endGame -= parameters[12];
+                    }
+                }
+            }
+            middleGame = -middleGame;
+            endGame = -endGame;
+            stm = !stm;
+        } while (!stm);
+        float score = ((middleGame * phase + endGame * (24 - phase)) / 24) + 16;
+        return (int)Math.Round(score * (board.IsWhiteToMove ? 1 : -1));
+    }
 
-    public int AlphaBeta(int alpha, int beta, int depth, int ply)
+    
+    public int AlphaBeta(int alpha, int beta, int depth, int ply, float[] parameters = null)
     {
         ulong key = board.ZobristKey;
         bool qSearch = depth <= 0,
@@ -159,7 +168,11 @@ public class MyBot : IChessBot
                 || entry.bound == 1 && entry.score <= alpha
         )) return entry.score;
 
-        int eval = Evaluate(board);
+        int eval;
+        if (parameters == null)
+            eval = Evaluate();
+        else
+            eval = TunerEvaluate(board, parameters);
 
         if (qSearch)
         {
@@ -168,21 +181,23 @@ public class MyBot : IChessBot
             alpha = Math.Max(alpha, bestScore);
         }
 
-        Move[] moves = board.GetLegalMoves(qSearch);
-        int[] scores = new int[moves.Length];
+        Span<Move> moveSpan = stackalloc Move[218];
+        board.GetLegalMovesNonAlloc(ref moveSpan, qSearch && !inCheck);
+        int[] scores = new int[moveSpan.Length];
 
-        for (int i = 0; i < moves.Length; i++)
+        for (int i = 0; i < moveSpan.Length; i++)
         {
-            Move move = moves[i];
-            scores[i] = (move == entry.move ? 10_000_000 :
-            killers[ply] == move.RawValue ? 9_000_000 :
-            move.IsCapture ? 1_000_000 * (int)move.CapturePieceType - (int)move.MovePieceType
-            : 0);
+            Move move = moveSpan[i];
+            scores[i] = move == entry.move ? -10_000_000 :
+            killers[ply] == move.RawValue ? -9_000_000 :
+            move.IsCapture ? -1_000_000 * (int)move.CapturePieceType + (int)move.MovePieceType
+            : 0;
         }
+
+        scores.AsSpan(0, moveSpan.Length).Sort(moveSpan);
 
         Move bestMove = Move.NullMove;
         int origAlpha = alpha;
-
 
         if (!qSearch && !inCheck)
         {
@@ -193,20 +208,14 @@ public class MyBot : IChessBot
             canFutilityPrune = depth <= 8 && eval + depth * 141 <= alpha;
         }
 
-        for (int i = 0; i < moves.Length; i++)
+        for (int i = 0; i < moveSpan.Length; i++)
         {
             if (
                 (Settings.TimeForMove != 0 && timer.MillisecondsElapsedThisTurn >= Settings.TimeForMove)//#DEBUG
                 || (Settings.TimeForMove == 0 && //#DEBUG
-                timer.MillisecondsElapsedThisTurn >= timer.MillisecondsRemaining / 30)) return 30000;
+                timer.MillisecondsElapsedThisTurn >= searchMaxTime)) return 30000;
 
-            for (int j = i + 1; j < moves.Length; j++)
-            {
-                if (scores[j] > scores[i])
-                    (scores[i], scores[j], moves[i], moves[j]) = (scores[j], scores[i], moves[j], moves[i]);
-            }
-
-            Move move = moves[i];
+            Move move = moveSpan[i];
             board.MakeMove(move);
             if (i > 0 && canFutilityPrune && !(board.IsInCheck() || move.IsCapture))
             {
@@ -234,7 +243,7 @@ public class MyBot : IChessBot
             }
         }
 
-        if (!qSearch && moves.Length == 0) return board.IsInCheck() ? -30_000 + ply * 1000 : 0;
+        if (!qSearch && moveSpan.Length == 0) return inCheck ? -30_000 + ply * 1000 : 0;
 
         int bound = bestScore >= beta ? 2 : bestScore > origAlpha ? 3 : 1;
 
@@ -247,8 +256,55 @@ public class MyBot : IChessBot
     }
 
     int lastEval = 0;
-
+    int searchMaxTime;
     public Move Think(Board board, Timer timer)
+    {
+        for (int i = 0; i < killers.Length; i++)
+        {
+            if (i == killers.Length - 1)
+                killers[i] = 0;
+            else
+                killers[i] = killers[i + 1];
+        }
+        this.board = board;
+        this.timer = timer;
+        bestRootMove = Move.NullMove;
+        int calculatedDepth = 2;
+        int eval = lastEval;
+        int alpha = eval - 25;
+        int beta = eval + 25;
+        searchMaxTime = timer.MillisecondsRemaining / 13;
+        while (calculatedDepth < 50)
+        {
+            eval = AlphaBeta(alpha, beta, calculatedDepth, 0);
+            if (eval <= alpha)
+                alpha -= 60;
+            else if (eval >= beta)
+                beta += 60;
+            else
+            {
+                calculatedDepth++;
+                alpha = eval - 25;
+                beta = eval + 25;
+                lastEval = eval; //#DEBUG
+            }
+            if ((Settings.TimeForMove != 0 && timer.MillisecondsElapsedThisTurn >= Settings.TimeForMove) //#DEBUG
+                    || (Settings.TimeForMove == 0 && //#DEBUG
+                    timer.MillisecondsElapsedThisTurn >= searchMaxTime / 3))
+            {
+                eval = lastEval; //#DEBUG
+                break;
+            }
+        }
+#if DEBUG
+        Console.WriteLine("MyBot: " + EvalToString(eval / 100f) + ";\tDepth: " + calculatedDepth); //#DEBUG
+        MatchStatsUI.depthSum1 += calculatedDepth; //#DEBUG
+        MatchStatsUI.movesPlayed1++; //#DEBUG
+#endif
+        return bestRootMove.IsNull ? board.GetLegalMoves()[0] : bestRootMove;
+    }
+
+    public Move Think(Board board, Timer timer, float[] parameters)
     {
         for (int i = 0; i < killers.Length; i++)
         {
@@ -266,7 +322,7 @@ public class MyBot : IChessBot
         int beta = eval + 25;
         while (calculatedDepth < 50)
         {
-            eval = AlphaBeta(alpha, beta, calculatedDepth, 0);
+            eval = AlphaBeta(alpha, beta, calculatedDepth, 0, parameters);
             if (eval <= alpha)
                 alpha -= 60;
             else if (eval >= beta)
@@ -286,9 +342,11 @@ public class MyBot : IChessBot
                 break;
             }
         }
+#if DEBUG
         Console.WriteLine("MyBot: " + EvalToString(eval / 100f) + ";\tDepth: " + calculatedDepth); //#DEBUG
         MatchStatsUI.depthSum1 += calculatedDepth; //#DEBUG
         MatchStatsUI.movesPlayed1++; //#DEBUG
+#endif
         return bestRootMove.IsNull ? board.GetLegalMoves()[0] : bestRootMove;
     }
 
