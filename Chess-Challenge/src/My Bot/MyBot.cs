@@ -61,10 +61,10 @@ public class MyBot : IChessBot
                     middleGame += getPstVal(ind) + pieceVal[piece];
                     endGame += getPstVal(ind + 64) + pieceVal[piece];
 
-                    int rank = (square & 7);
+                    ulong rank = 0x101010101010101UL << (square & 7);
 
                     //Mobility Bonus
-                    if ((int)p >= 2 && (int)p <= 4)
+                    if ((int)p > 2 && (int)p <= 5)
                     {
                         int bonus = BitboardHelper.GetNumberOfSetBits(BitboardHelper.GetPieceAttacks((PieceType)piece + 1, new Square(square), board, stm));
                         middleGame += bonus;
@@ -72,18 +72,25 @@ public class MyBot : IChessBot
                     }
 
                     // Bishop pair bonus
-                    if (piece == 2 && mask != 0)
+                    if (piece == 3 && mask != 0)
                     {
                         middleGame += 23;
                         endGame += 62;
                     }
 
                     // Doubled pawns penalty
-                    if (piece == 0 && ((0x101010101010101UL << rank) & mask) > 0)
+                    if (piece == 1 && (rank & mask) > 0)
                     {
                         middleGame -= 15;
                         endGame -= 30;
                     }
+
+                    //Semi open files rook
+                    /*if (piece == 4 && (rank & board.GetPieceBitboard(PieceType.Pawn, stm)) == 0)
+                    {
+                        middleGame += 13;
+                        endGame += 10;
+                    }*/
                 }
             }
             middleGame = -middleGame;
@@ -243,7 +250,7 @@ public class MyBot : IChessBot
             }
         }
 
-        if (!qSearch && moveSpan.Length == 0) return inCheck ? -30_000 + ply * 1000 : 0;
+        if (!qSearch && moveSpan.Length == 0) return inCheck ? -30_000 + ply : 0;
 
         int bound = bestScore >= beta ? 2 : bestScore > origAlpha ? 3 : 1;
 
@@ -320,6 +327,7 @@ public class MyBot : IChessBot
         int eval = lastEval;
         int alpha = eval - 25;
         int beta = eval + 25;
+        searchMaxTime = timer.MillisecondsRemaining / 13;
         while (calculatedDepth < 50)
         {
             eval = AlphaBeta(alpha, beta, calculatedDepth, 0, parameters);
@@ -336,7 +344,7 @@ public class MyBot : IChessBot
             }
             if ((Settings.TimeForMove != 0 && timer.MillisecondsElapsedThisTurn >= Settings.TimeForMove) //#DEBUG
                     || (Settings.TimeForMove == 0 && //#DEBUG
-                    timer.MillisecondsElapsedThisTurn >= timer.MillisecondsRemaining / 30))
+                    timer.MillisecondsElapsedThisTurn >= searchMaxTime / 3))
             {
                 eval = lastEval; //#DEBUG
                 break;
@@ -354,11 +362,11 @@ public class MyBot : IChessBot
     {
         if (v >= 100)
         {
-            return "M" + (300 - v) / 10;
+            return "M" + (300 - v)*10;
         }
         else if (v <= -100)
         {
-            return "M" + (-300 - v) / 10;
+            return "M" + (-300 - v)*10;
         }
         return v.ToString();
     }
