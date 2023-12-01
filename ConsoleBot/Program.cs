@@ -1,4 +1,4 @@
-﻿using Chess_Challenge.src.EvilBot6_7;
+﻿using Chess_Challenge.src.EvilBot6_8;
 using ChessChallenge.API;
 using ChessChallenge.Example;
 
@@ -7,7 +7,7 @@ static class Program
 {
     public static void Main()
     {
-        IChessBot bot = new EvilBot6_7();
+        IChessBot bot = new EvilBot6_8();
         ChessChallenge.Chess.Board tempBoard = new ChessChallenge.Chess.Board();
         tempBoard.LoadStartPosition();
         Board board = new Board(tempBoard);
@@ -27,7 +27,7 @@ static class Program
                     break;
 
                 case "ucinewgame":
-                    bot = new EvilBot6_7();
+                    bot = new EvilBot6_8();
                     tempBoard = new ChessChallenge.Chess.Board();
                     tempBoard.LoadStartPosition();
                     board = new Board(tempBoard);

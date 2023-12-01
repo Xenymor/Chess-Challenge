@@ -64,9 +64,9 @@ public class MyBot : IChessBot
                     ulong rank = 0x101010101010101UL << (square & 7);
 
                     //Mobility Bonus
-                    if ((int)p > 2 && (int)p <= 5)
+                    if (piece >= 3 && piece <= 5)
                     {
-                        int bonus = BitboardHelper.GetNumberOfSetBits(BitboardHelper.GetPieceAttacks((PieceType)piece + 1, new Square(square), board, stm));
+                        int bonus = BitboardHelper.GetNumberOfSetBits(BitboardHelper.GetPieceAttacks(p, new Square(square), board, stm));
                         middleGame += bonus;
                         endGame += bonus * 2;
                     }
@@ -86,11 +86,11 @@ public class MyBot : IChessBot
                     }
 
                     //Semi open files rook
-                    /*if (piece == 4 && (rank & board.GetPieceBitboard(PieceType.Pawn, stm)) == 0)
+                    if (piece == 4 && (rank & board.GetPieceBitboard(PieceType.Pawn, stm)) == 0)
                     {
                         middleGame += 13;
                         endGame += 10;
-                    }*/
+                    }
                 }
             }
             middleGame = -middleGame;
@@ -285,14 +285,14 @@ public class MyBot : IChessBot
         {
             eval = AlphaBeta(alpha, beta, calculatedDepth, 0);
             if (eval <= alpha)
-                alpha -= 60;
+                alpha -= 62;
             else if (eval >= beta)
-                beta += 60;
+                beta += 62;
             else
             {
                 calculatedDepth++;
-                alpha = eval - 25;
-                beta = eval + 25;
+                alpha = eval - 17;
+                beta = eval + 17;
                 lastEval = eval; //#DEBUG
             }
             if ((Settings.TimeForMove != 0 && timer.MillisecondsElapsedThisTurn >= Settings.TimeForMove) //#DEBUG
@@ -362,11 +362,11 @@ public class MyBot : IChessBot
     {
         if (v >= 100)
         {
-            return "M" + (300 - v)*10;
+            return "M" + Math.Round((300 - v)*100);
         }
         else if (v <= -100)
         {
-            return "M" + (-300 - v)*10;
+            return "M" + Math.Round((-300 - v)*100);
         }
         return v.ToString();
     }
