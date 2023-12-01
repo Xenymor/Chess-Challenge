@@ -155,7 +155,7 @@ public class MyBot : IChessBot
     }
 
     
-    public int AlphaBeta(int alpha, int beta, int depth, int ply, float[] parameters = null)
+    public int AlphaBeta(int alpha, int beta, int depth, int ply, bool allowNull, float[] parameters = null)
     {
         ulong key = board.ZobristKey;
         bool qSearch = depth <= 0,
@@ -212,6 +212,19 @@ public class MyBot : IChessBot
             if (depth <= 7 && eval - 74 * depth >= beta)
                 return eval;
 
+            if (depth >= 2 && eval >= beta && allowNull)
+            {
+                board.ForceSkipTurn();
+
+                // TODO: Play with values: Try a max of 4 or 5 instead of 6
+                int localEval = AlphaBeta(-beta, -alpha,depth - (3 + depth / 4 + Math.Min(6, (eval - beta) / 175)), ply+1, false);
+                board.UndoSkipTurn();
+
+                // Failed high on the null move
+                if (localEval >= beta)
+                    return eval;
+            }
+
             canFutilityPrune = depth <= 8 && eval + depth * 141 <= alpha;
         }
 
@@ -230,10 +243,10 @@ public class MyBot : IChessBot
                 continue;
             }
             int newExtension = qSearch ? 0 : (board.IsInCheck() ? 1 : ((move.MovePieceType == PieceType.Pawn && (move.TargetSquare.Rank == 6 || move.TargetSquare.Rank == 1)) ? 1 : 0));
-            int score = -AlphaBeta(-(alpha + 1), -alpha, depth - 1 + newExtension, ply + 1);
+            int score = -AlphaBeta(-(alpha + 1), -alpha, depth - 1 + newExtension, ply + 1, true);
             if (score > alpha && score < beta)
             {
-                score = Math.Max(score, -AlphaBeta(-beta, -alpha, depth - 1 + newExtension, ply + 1));
+                score = Math.Max(score, -AlphaBeta(-beta, -alpha, depth - 1 + newExtension, ply + 1, true));
             }
             board.UndoMove(move);
 
@@ -281,18 +294,18 @@ public class MyBot : IChessBot
         int alpha = eval - 25;
         int beta = eval + 25;
         searchMaxTime = timer.MillisecondsRemaining / 13;
-        while (calculatedDepth < 50)
+        for(; ; )
         {
-            eval = AlphaBeta(alpha, beta, calculatedDepth, 0);
+            eval = AlphaBeta(alpha, beta, calculatedDepth, 0, true);
             if (eval <= alpha)
-                alpha -= 62;
+                alpha -= 60;
             else if (eval >= beta)
-                beta += 62;
+                beta += 60;
             else
             {
                 calculatedDepth++;
-                alpha = eval - 17;
-                beta = eval + 17;
+                alpha = eval - 25;
+                beta = eval + 25;
                 lastEval = eval; //#DEBUG
             }
             if ((Settings.TimeForMove != 0 && timer.MillisecondsElapsedThisTurn >= Settings.TimeForMove) //#DEBUG
@@ -330,7 +343,7 @@ public class MyBot : IChessBot
         searchMaxTime = timer.MillisecondsRemaining / 13;
         while (calculatedDepth < 50)
         {
-            eval = AlphaBeta(alpha, beta, calculatedDepth, 0, parameters);
+            eval = AlphaBeta(alpha, beta, calculatedDepth, 0, true, parameters);
             if (eval <= alpha)
                 alpha -= 60;
             else if (eval >= beta)
