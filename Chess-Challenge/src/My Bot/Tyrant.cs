@@ -1,7 +1,7 @@
 ﻿using ChessChallenge.API;
-using System.Linq;
-using System;
 using ChessChallenge.Application;
+using System;
+using System.Linq;
 
 public class Tyrant : IChessBot
 {
@@ -65,7 +65,7 @@ public class Tyrant : IChessBot
             // Out of time -> soft bound exceeded
             if (timer.MillisecondsElapsedThisTurn > searchMaxTime / 3)
             {
-                Console.WriteLine("MyBot: " + eval/100f); // DEBUG
+                Console.WriteLine("MyBot: " + eval / 100f); // DEBUG
                 MatchStatsUI.depthSum1 += depth;
                 MatchStatsUI.movesPlayed1++;
                 return rootMove;
@@ -316,16 +316,16 @@ public class Tyrant : IChessBot
                         }
 
                         // Semi-open file bonus for rooks (+14.6 elo alone)
-                        
+
                         if (piece == 3 && (0x101010101010101UL << (square & 7) & board.GetPieceBitboard(PieceType.Pawn, sideToMove > 0)) == 0)
                         {
                             middlegame += 13;
                             endgame += 10;
                         }
-                        
+
 
                         // Mobility bonus (+15 elo alone)
-                        
+
                         if (piece >= 2 && piece <= 4)
                         {
                             int bonus = BitboardHelper.GetNumberOfSetBits(
@@ -333,7 +333,7 @@ public class Tyrant : IChessBot
                             middlegame += bonus;
                             endgame += bonus * 2;
                         }
-                        
+
                     }
             return (middlegame * gamephase + endgame * (24 - gamephase)) / (board.IsWhiteToMove ? 24 : -24)
             // Tempo bonus to help with aspiration windows

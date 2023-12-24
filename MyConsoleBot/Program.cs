@@ -1,6 +1,4 @@
-﻿using Chess_Challenge.src.EvilBot6_3;
-using ChessChallenge.API;
-using System.Reflection;
+﻿using ChessChallenge.API;
 
 static class Program
 {
@@ -11,7 +9,7 @@ static class Program
         ChessChallenge.Chess.Board tempBoard = new ChessChallenge.Chess.Board();
         tempBoard.LoadStartPosition();
         Board board = new Board(tempBoard);
-        float[] parameters = new float[]        { 0, 100, 310, 330, 500, 1000, 10000, 1, 2,    23,   62,  15, 30};
+        float[] parameters = new float[] { 0, 100, 310, 330, 500, 1000, 10000, 1, 2, 23, 62, 15, 30 };
         List<String> parameterNames = new List<String>();
         bool isTuning = false;
         parameterNames.AddRange(new string[] { "", "PV", "NV", "BV", "RV", "QV", "KV", "MM", "ME", "BPM", "BPE", "DM", "DE" });
