@@ -107,65 +107,6 @@ public class EvilBot6_9_4 : IChessBot
         } while (!stm);
         return (middleGame * phase + endGame * (24 - phase)) / (board.IsWhiteToMove ? 24 : -24) + 16;
     }
-    public int TunerEvaluate(Board board, float[] parameters) //#DEBUG
-    { //#DEBUG
-        float middleGame = 0, endGame = 0, phase = 0; //#DEBUG
-        bool stm = true; //#DEBUG
-        do //#DEBUG
-        { //#DEBUG
-            for (var p = PieceType.Pawn; p <= PieceType.King; p++) //#DEBUG
-            { //#DEBUG
-                int piece = (int)p, ind, temp; //#DEBUG
-                ulong mask = board.GetPieceBitboard(p, stm); //#DEBUG
-                while (mask != 0) //#DEBUG
-                { //#DEBUG
-                    phase += piecePhase[piece]; //#DEBUG
-                    int square = BitboardHelper.ClearAndGetIndexOfLSB(ref mask); //#DEBUG
-                    ind = 128 * (piece - 1) + square ^ (stm ? 56 : 0); //#DEBUG
-
-                    //Piece Square Values
-                    middleGame += getPstVal(ind) + parameters[piece]; //#DEBUG
-                    endGame += getPstVal(ind + 64) + parameters[piece]; //#DEBUG
-
-                    ulong rank = 0x101010101010101UL << (square & 7); //#DEBUG
-
-                    //Mobility Bonus
-                    if (piece >= 3 && piece <= 5) //#DEBUG
-                    { //#DEBUG
-                        temp = BitboardHelper.GetNumberOfSetBits(BitboardHelper.GetPieceAttacks(p, new Square(square), board, stm)); //#DEBUG
-                        middleGame += temp * parameters[7]; //#DEBUG
-                        endGame += temp * parameters[8]; //#DEBUG
-                    } //#DEBUG
-
-                    // Bishop pair bonus
-                    if (piece == 3 && mask != 0) //#DEBUG
-                    { //#DEBUG
-                        middleGame += parameters[9]; //#DEBUG
-                        endGame += parameters[10]; //#DEBUG
-                    } //#DEBUG
-
-                    // Doubled pawns penalty
-                    if (piece == 1 && (rank & mask) > 0) //#DEBUG
-                    {
-                        middleGame -= parameters[11]; //#DEBUG
-                        endGame -= parameters[12]; //#DEBUG
-                    } //#DEBUG
-
-                    //Semi open files rook
-                    if (piece == 4 && (rank & board.GetPieceBitboard(PieceType.Pawn, stm)) == 0) //#DEBUG
-                    { //#DEBUG
-                        middleGame += parameters[13]; //#DEBUG
-                        endGame += parameters[14]; //#DEBUG
-                    } //#DEBUG
-                } //#DEBUG
-            } //#DEBUG
-            middleGame = -middleGame; //#DEBUG
-            endGame = -endGame; //#DEBUG
-            stm = !stm; //#DEBUG
-        } while (!stm); //#DEBUG
-        return (int)Math.Round(((middleGame * phase + endGame * (24 - phase)) / (board.IsWhiteToMove ? 24 : -24)) + 16); //#DEBUG
-    } //#DEBUG
-
 
     public int AlphaBeta(int alpha, int beta, int depth, int ply, bool allowNull)
     {
@@ -325,8 +266,8 @@ public class EvilBot6_9_4 : IChessBot
             + ";\tNodeCount: " + nodeCounter //#DEBUG
             + ";\tNpS: " + (nodeCounter / (float)timer.MillisecondsElapsedThisTurn) //#DEBUG
             ); //#DEBUG
-        MatchStatsUI.depthSum1 += calculatedDepth; //#DEBUG
-        MatchStatsUI.movesPlayed1++; //#DEBUG
+        MatchStatsUI.depthSum2 += calculatedDepth; //#DEBUG
+        MatchStatsUI.movesPlayed2++; //#DEBUG
 #endif
         return bestRootMove.IsNull ? board.GetLegalMoves()[0] : bestRootMove;
     }

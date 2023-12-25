@@ -6,7 +6,7 @@ static class Program
 {
     public static void Main()
     {
-        IChessBot bot = new EvilBot6_9();
+        IChessBot bot = new EvilBot6_9_4();
         ChessChallenge.Chess.Board tempBoard = new ChessChallenge.Chess.Board();
         tempBoard.LoadStartPosition();
         Board board = new Board(tempBoard);
