@@ -99,10 +99,6 @@ public class EvilBot6_9_4 : IChessBot
                             endGame += 10;
                         }
                     }
-                    //else if (piece == 6) // Calculate King Distance
-                    //{
-                    //    kingDist = kingDist == 0 ? square : Math.Max(Math.Abs((square & 7) - (kingDist & 7)), Math.Abs((square >> 3) - (kingDist >> 3)));
-                    //}
                 }
             }
             middleGame = -middleGame;
