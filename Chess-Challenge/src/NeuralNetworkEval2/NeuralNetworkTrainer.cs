@@ -9,10 +9,12 @@ namespace Chess_Challenge.src.NeuralNetworkEval2
     {
         private const string SAVE_PATH = "C:\\Users\\timon\\Documents\\Programmieren\\C#\\Chess-Challenge\\Chess-Challenge\\src\\NeuralNetworkEval2\\NeuralNetwork.json";
 
+
         public static void Main()
         {
             Program.Main();
 
+            /*
             HyperParameters hyperParameters = new HyperParameters();
             // Set learning params
             hyperParameters.regularization = 0.1;
@@ -57,8 +59,9 @@ namespace Chess_Challenge.src.NeuralNetworkEval2
                 networkTrainer.Learn();
                 counter++;
             }
+            */
         }
-
+        /*
         private static double getCost(NeuralNetwork neuralNetwork, DataPoint[] dataPoints)
         {
             double sum = 0;
@@ -105,5 +108,6 @@ namespace Chess_Challenge.src.NeuralNetworkEval2
 
             return new DataPoint(inputs, outputs);
         }
+        */
     }
 }

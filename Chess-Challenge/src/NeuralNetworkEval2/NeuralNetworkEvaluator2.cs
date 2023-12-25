@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace NeuralNetworkEval
 {
-
+    /*
     public class NeuralNetworkEvaluator2
     {
         static double[] inputs = new double[64];
@@ -40,4 +40,5 @@ namespace NeuralNetworkEval
             return (int)(neuralNetwork.CalculateOutputs(inputs)[0] - 30_000d);
         }
     }
+    */
 }
