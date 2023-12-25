@@ -2,26 +2,21 @@
 using ChessChallenge.Application;
 using System;
 
-public class MyBot : IChessBot
+public class EvilBot6_9_4 : IChessBot
 {
-    bool isTuning;
-    public MyBot(bool isTuning = false)
+    public EvilBot6_9_4()
     {
-        this.isTuning = isTuning;
         for (int i = 0; i < 64; i++)
         {
             squares[i] = new Square(i);
         }
     }
 
-    public static readonly bool includes_additional_score = false;
-    public static readonly bool supports_external_chess_eval = true;
-
 #if DEBUG
     uint nodeCounter;
 #endif
 
-    Move bestRootMove = Move.NullMove;
+    Move bestRootMove;
 
     struct TTEntry
     {
@@ -34,7 +29,7 @@ public class MyBot : IChessBot
         }
     }
 
-    const int ENTRIES = (1 << 20);
+    const int ENTRIES = 1 << 20;
     const int ENTRIES_MASK = (1 << 20) - 1;
     TTEntry[] tt = new TTEntry[ENTRIES];
 
@@ -75,7 +70,7 @@ public class MyBot : IChessBot
 
                     ulong rank = 0x101010101010101UL << (square & 7);
 
-                    
+
                     if (piece == 1) // Doubled pawns penalty
                     {
                         if ((rank & mask) > 0)
@@ -176,8 +171,7 @@ public class MyBot : IChessBot
     } //#DEBUG
 
 
-    public int AlphaBeta(int alpha, int beta, int depth, int ply, bool allowNull,
-        float[] parameters = null) //#DEBUG
+    public int AlphaBeta(int alpha, int beta, int depth, int ply, bool allowNull)
     {
 #if DEBUG
         nodeCounter++;
@@ -202,11 +196,7 @@ public class MyBot : IChessBot
                 || entry.bound == 1 && entry.score <= alpha
         )) return entry.score;
 
-        int eval;
-        if (parameters == null) //#DEBUG
-            eval = Evaluate();
-        else //#DEBUG
-            eval = TunerEvaluate(board, parameters); //#DEBUG
+        int eval = Evaluate();
 
         if (qSearch)
         {
@@ -334,61 +324,11 @@ public class MyBot : IChessBot
             }
         }
 #if DEBUG
-        Console.WriteLine("MyBot: " + EvalToString(eval / 100f)
-            + ";\tDepth: " + calculatedDepth + (timer.MillisecondsElapsedThisTurn >= searchMaxTime ? "!" : "")
-            + ";\tNodeCount: " + nodeCounter
-            + ";\tNpS: " + (nodeCounter / (float)timer.MillisecondsElapsedThisTurn)
+        Console.WriteLine("EvilBot: " + EvalToString(eval / -100f) //#DEBUG
+            + ";\tDepth: " + calculatedDepth + (timer.MillisecondsElapsedThisTurn >= searchMaxTime ? "?" : "") //#DEBUG
+            + ";\tNodeCount: " + nodeCounter //#DEBUG
+            + ";\tNpS: " + (nodeCounter / (float)timer.MillisecondsElapsedThisTurn) //#DEBUG
             ); //#DEBUG
-        MatchStatsUI.depthSum1 += calculatedDepth; //#DEBUG
-        MatchStatsUI.movesPlayed1++; //#DEBUG
-#endif
-        return bestRootMove.IsNull ? board.GetLegalMoves()[0] : bestRootMove;
-    }
-
-    public Move Think(Board board, Timer timer, float[] parameters)
-    {
-#if DEBUG
-        nodeCounter = 0;
-#endif
-        for (int i = 0; i < killers.Length; i++)
-        {
-            if (i == killers.Length - 1)
-                killers[i] = 0;
-            else
-                killers[i] = killers[i + 1];
-        }
-        this.board = board;
-        this.timer = timer;
-        bestRootMove = Move.NullMove;
-        int calculatedDepth = 2;
-        int eval = lastEval;
-        int alpha = eval - 25;
-        int beta = eval + 25;
-        searchMaxTime = timer.MillisecondsRemaining / 13;
-        while (calculatedDepth < 50)
-        {
-            eval = AlphaBeta(alpha, beta, calculatedDepth, 0, true, parameters);
-            if (eval <= alpha)
-                alpha -= 60;
-            else if (eval >= beta)
-                beta += 60;
-            else
-            {
-                calculatedDepth++;
-                alpha = eval - 25;
-                beta = eval + 25;
-                lastEval = eval; //#DEBUG
-            }
-            if ((Settings.TimeForMove != 0 && timer.MillisecondsElapsedThisTurn >= Settings.TimeForMove) //#DEBUG
-                    || (Settings.TimeForMove == 0 && //#DEBUG
-                    timer.MillisecondsElapsedThisTurn >= searchMaxTime / 3))
-            {
-                eval = lastEval; //#DEBUG
-                break;
-            }
-        }
-#if DEBUG
-        Console.WriteLine("MyBot: " + EvalToString(eval / 100f) + ";\tDepth: " + calculatedDepth + ";\tNodeCount: " + nodeCounter + ";\tNpS: " + (nodeCounter / (float)timer.MillisecondsElapsedThisTurn)); //#DEBUG
         MatchStatsUI.depthSum1 += calculatedDepth; //#DEBUG
         MatchStatsUI.movesPlayed1++; //#DEBUG
 #endif
