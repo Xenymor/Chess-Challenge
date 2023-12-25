@@ -55,7 +55,7 @@ public class MyBot : IChessBot
 
     public int Evaluate()
     {
-        int middleGame = 0, endGame = 0, phase = 0;
+        int middleGame = 0, endGame = 0, phase = 0, kingDist = 0;
         bool stm = true;
         do
         {
@@ -75,8 +75,16 @@ public class MyBot : IChessBot
 
                     ulong rank = 0x101010101010101UL << (square & 7);
 
-                    //Mobility Bonus
-                    if (piece >= 3 && piece <= 5)
+                    
+                    if (piece == 1) // Doubled pawns penalty
+                    {
+                        if ((rank & mask) > 0)
+                        {
+                            middleGame -= 15;
+                            endGame -= 30;
+                        }
+                    }
+                    else if (piece >= 3 && piece <= 5) //Mobility Bonus
                     {
                         temp = BitboardHelper.GetNumberOfSetBits(BitboardHelper.GetPieceAttacks(p, squares[square], board, stm));
                         middleGame += temp;
@@ -96,18 +104,17 @@ public class MyBot : IChessBot
                             endGame += 10;
                         }
                     }
-                    else if (piece == 1 && (rank & mask) > 0) // Doubled pawns penalty
-                    {                    
-                        middleGame -= 15;
-                        endGame -= 30;
-                    }
+                    //else if (piece == 6) // Calculate King Distance
+                    //{
+                    //    kingDist = kingDist == 0 ? square : Math.Max(Math.Abs((square & 7) - (kingDist & 7)), Math.Abs((square >> 3) - (kingDist >> 3)));
+                    //}
                 }
             }
             middleGame = -middleGame;
             endGame = -endGame;
             stm = !stm;
         } while (!stm);
-        return (middleGame * phase + endGame * (24 - phase) + 384) / (board.IsWhiteToMove ? 24 : -24); // 384 = 16 * 24
+        return (middleGame * phase + endGame * (24 - phase)) / (board.IsWhiteToMove ? 24 : -24) + 16;
     }
     public int TunerEvaluate(Board board, float[] parameters) //#DEBUG
     { //#DEBUG
@@ -327,7 +334,11 @@ public class MyBot : IChessBot
             }
         }
 #if DEBUG
-        Console.WriteLine("MyBot: " + EvalToString(eval / 100f) + ";\tDepth: " + calculatedDepth + ";\tNodeCount: " + nodeCounter + ";\tNpS: " + (nodeCounter / (float)timer.MillisecondsElapsedThisTurn)); //#DEBUG
+        Console.WriteLine("MyBot: " + EvalToString(eval / 100f)
+            + ";\tDepth: " + calculatedDepth + (timer.MillisecondsElapsedThisTurn >= searchMaxTime ? "!" : "")
+            + ";\tNodeCount: " + nodeCounter
+            + ";\tNpS: " + (nodeCounter / (float)timer.MillisecondsElapsedThisTurn)
+            ); //#DEBUG
         MatchStatsUI.depthSum1 += calculatedDepth; //#DEBUG
         MatchStatsUI.movesPlayed1++; //#DEBUG
 #endif
