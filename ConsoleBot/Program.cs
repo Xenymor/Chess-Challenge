@@ -1,12 +1,12 @@
-﻿using Chess_Challenge.src.EvilBot6_9;
-using ChessChallenge.API;
+﻿using ChessChallenge.API;
 
 
 static class Program
 {
     public static void Main()
     {
-        IChessBot bot = new EvilBot6_9_4();
+        IChessBot bot = new EvilBot6_9_6();
+        Type botType = bot.GetType();
         ChessChallenge.Chess.Board tempBoard = new ChessChallenge.Chess.Board();
         tempBoard.LoadStartPosition();
         Board board = new Board(tempBoard);
@@ -26,7 +26,7 @@ static class Program
                     break;
 
                 case "ucinewgame":
-                    bot = new EvilBot6_9();
+                    bot = (IChessBot)botType.GetConstructor(new Type[0]).Invoke(new Object[0]);
                     tempBoard = new ChessChallenge.Chess.Board();
                     tempBoard.LoadStartPosition();
                     board = new Board(tempBoard);
