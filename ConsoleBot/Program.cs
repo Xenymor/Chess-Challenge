@@ -26,7 +26,7 @@ static class Program
                     break;
 
                 case "ucinewgame":
-                    bot = (IChessBot)botType.GetConstructor(new Type[0]).Invoke(new Object[0]);
+                    bot = (IChessBot)botType.GetConstructor(new Type[0]).Invoke(new object[0]);
                     tempBoard = new ChessChallenge.Chess.Board();
                     tempBoard.LoadStartPosition();
                     board = new Board(tempBoard);

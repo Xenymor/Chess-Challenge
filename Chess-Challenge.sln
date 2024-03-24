@@ -16,7 +16,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tuner", "Tuner\Tuner.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuralNetwork", "..\NeuralNetwork\NeuralNetwork\NeuralNetwork\NeuralNetwork.csproj", "{27E6E266-EB05-4312-8EFB-93F44ACC4247}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyConsoleBot", "MyConsoleBot\MyConsoleBot.csproj", "{3422B994-C84C-41AA-A014-7BE49A92B185}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MyConsoleBot", "MyConsoleBot\MyConsoleBot.csproj", "{3422B994-C84C-41AA-A014-7BE49A92B185}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SPSA-Tuning", "SPSA-Tuning\SPSA-Tuning.csproj", "{BAACB999-713C-4867-AF6D-DD99A9C51660}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,6 +46,10 @@ Global
 		{3422B994-C84C-41AA-A014-7BE49A92B185}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3422B994-C84C-41AA-A014-7BE49A92B185}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3422B994-C84C-41AA-A014-7BE49A92B185}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BAACB999-713C-4867-AF6D-DD99A9C51660}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BAACB999-713C-4867-AF6D-DD99A9C51660}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BAACB999-713C-4867-AF6D-DD99A9C51660}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BAACB999-713C-4867-AF6D-DD99A9C51660}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

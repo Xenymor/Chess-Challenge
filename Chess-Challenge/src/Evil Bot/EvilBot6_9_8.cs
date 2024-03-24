@@ -68,12 +68,9 @@ public class EvilBot6_9_8 : IChessBot
                     middleGame += getPstVal(ind) + pieceVal[piece];
                     endGame += getPstVal(ind + 64) + pieceVal[piece];
 
-                    ulong rank = 0x101010101010101UL << (square & 7);
-
-
                     if (piece == 1) // Doubled pawns penalty
                     {
-                        if ((rank & mask) > 0)
+                        if (((0x101010101010101UL << (square & 7)) & mask) > 0)
                         {
                             middleGame -= 15;
                             endGame -= 30;
@@ -93,7 +90,7 @@ public class EvilBot6_9_8 : IChessBot
                         }
 
                         //Semi open files rook
-                        if (piece == 4 && (rank & board.GetPieceBitboard(PieceType.Pawn, stm)) == 0)
+                        if (piece == 4 && ((0x101010101010101UL << (square & 7)) & board.GetPieceBitboard(PieceType.Pawn, stm)) == 0)
                         {
                             middleGame += 13;
                             endGame += 10;
@@ -265,7 +262,7 @@ public class EvilBot6_9_8 : IChessBot
         Console.WriteLine("EvilBot: " + EvalToString(eval / -100f) //#DEBUG
             + ";\tDepth: " + calculatedDepth + (timer.MillisecondsElapsedThisTurn >= searchMaxTime ? "?" : "") //#DEBUG
             + ";\tNodeCount: " + nodeCounter //#DEBUG
-            + ";\tNpS: " + (nodeCounter / (float)timer.MillisecondsElapsedThisTurn) //#DEBUG
+            + ";\tkNpS: " + (nodeCounter / (float)timer.MillisecondsElapsedThisTurn) //#DEBUG
             ); //#DEBUG
         MatchStatsUI.depthSum2 += calculatedDepth; //#DEBUG
         MatchStatsUI.movesPlayed2++; //#DEBUG

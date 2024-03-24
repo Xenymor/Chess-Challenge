@@ -2,17 +2,61 @@
 
 static class Program
 {
+    static int[] parameters;
     public static void Main()
     {
-        IChessBot bot = new MyBot();
+        IChessBot bot = new MyBot(true);
         Type botType = bot.GetType();
         ChessChallenge.Chess.Board tempBoard = new ChessChallenge.Chess.Board();
         tempBoard.LoadStartPosition();
         Board board = new Board(tempBoard);
-        float[] parameters = new float[] { 0, 100, 310, 330, 500, 1000, 10000, 1, 2, 23, 62, 15, 30 };
-        List<String> parameterNames = new List<String>();
-        bool isTuning = false;
-        parameterNames.AddRange(new string[] { "", "PV", "NV", "BV", "RV", "QV", "KV", "MM", "ME", "BPM", "BPE", "DM", "DE" });
+        List<string> parameterNames = new List<string>();
+        bool isTuning = true;
+        parameterNames.AddRange(new string[] { "NO", "PV", "NV", "BV", "RV", "QV", "KV", "DPM", "DPE", "BPM", "BPE", "OFM", "OFE", "FP", "RFP", "SEC", "SEP", "HTL", "AWW", "AWS", "STL" });
+        parameters = new int[parameterNames.Count];
+        for (int i = 0; i < parameters.Length; i++)
+        {
+            parameters[i] = 1;
+            //Console.WriteLine("IntegerParameter " + parameterNames[i] + " " + -1000 + " " + 1000);
+        }
+        parameters[parameterNames.IndexOf("NO")] = 0;
+        parameters[parameterNames.IndexOf("PV")] = 100;
+        parameters[parameterNames.IndexOf("KV")] = 10_000;
+        parameters[parameterNames.IndexOf("NV")] = 310;
+        parameters[parameterNames.IndexOf("BV")] = 330;
+        parameters[parameterNames.IndexOf("RV")] = 500;
+        parameters[parameterNames.IndexOf("QV")] = 1000;
+        parameters[parameterNames.IndexOf("DPM")] = 15;
+        parameters[parameterNames.IndexOf("DPE")] = 30;
+        parameters[parameterNames.IndexOf("BPM")] = 23;
+        parameters[parameterNames.IndexOf("BPE")] = 60;
+        parameters[parameterNames.IndexOf("OFM")] = 13;
+        parameters[parameterNames.IndexOf("OFE")] = 10;
+        parameters[parameterNames.IndexOf("FP")] = 141;
+        parameters[parameterNames.IndexOf("RFP")] = 74;
+        parameters[parameterNames.IndexOf("SEC")] = 1;
+        parameters[parameterNames.IndexOf("SEP")] = 1;
+        parameters[parameterNames.IndexOf("HTL")] = 13;
+        parameters[parameterNames.IndexOf("AWW")] = 60;
+        parameters[parameterNames.IndexOf("AWS")] = 25;
+        parameters[parameterNames.IndexOf("STL")] = 3;
+        /*for (int i = 0; i < parameters.Length; i++)
+        {
+            Console.WriteLine("IntegerParameter " + parameterNames[i] + " " + parameters[i]);
+        }
+        for (int i = 0; i < parameters.Length; i++)
+        {
+            Console.WriteLine("IntegerParameter " + parameterNames[i] + " " + (int)(parameters[i]*0.9) + " " + (int)(parameters[i]*1.1));
+        }
+        for (int i = 0; i < parameters.Length; i++)
+        {
+            Console.Write(", " + parameters[i]);
+        }
+        Console.WriteLine();
+        for (int i = 0; i < parameterNames.Count; i++)
+        {
+            Console.Write("\", \"" + parameterNames[i]);
+        }*/
         while (true)
         {
             string command = Console.ReadLine();
@@ -61,22 +105,32 @@ static class Program
 
                 case "go":
                     // Parse time controls and other parameters
-                    int wtime = 0;
-                    int btime = 0;
+                    int wtime = 120_000;
+                    int btime = 120_000;
+                    int depth = 0;
                     for (int i = 1; i < tokens.Length - 1; i++)
                     {
                         if (tokens[i] == "wtime")
                             wtime = int.Parse(tokens[i + 1]);
                         else if (tokens[i] == "btime")
                             btime = int.Parse(tokens[i + 1]);
+                        else if (tokens[i] == "depth")
+                        {
+                            depth = int.Parse(tokens[i + 1]);
+                            wtime = int.MaxValue;
+                            btime = int.MaxValue;
+                        }
                     }
 
                     // Call engine to calculate and return best move
                     string bestMoveString;
-                    if (!isTuning)
-                        bestMoveString = bot.Think(board, new ChessChallenge.API.Timer(board.IsWhiteToMove ? wtime : btime)).ToString();
+                    if (isTuning)
+                        if (depth == 0)
+                            bestMoveString = ((MyBot)bot).Think(board, new ChessChallenge.API.Timer(board.IsWhiteToMove ? wtime : btime), parameters).ToString();
+                        else
+                            bestMoveString = ((MyBot)bot).Think(board, new ChessChallenge.API.Timer(board.IsWhiteToMove ? wtime : btime), parameters, depth).ToString();
                     else
-                        bestMoveString = ((MyBot)bot).Think(board, new ChessChallenge.API.Timer(board.IsWhiteToMove ? wtime : btime), parameters).ToString();
+                        bestMoveString = bot.Think(board, new ChessChallenge.API.Timer(board.IsWhiteToMove ? wtime : btime)).ToString();
                     string bestMoveFormattedString = bestMoveString.Substring(7, bestMoveString.Length - 8);
 
                     Console.WriteLine("bestmove " + bestMoveFormattedString);
@@ -88,7 +142,7 @@ static class Program
                         bot = (IChessBot)botType.GetConstructor(new Type[] { false.GetType() }).Invoke(new object[] { true });
                         isTuning = true;
                     }
-                    parameters[parameterNames.IndexOf(tokens[1])] = float.Parse(tokens[2]);
+                    parameters[parameterNames.IndexOf(tokens[1])] = int.Parse(tokens[2]);
                     break;
 
                 default:

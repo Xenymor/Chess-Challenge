@@ -1,0 +1,64 @@
+#
+# MyTuning.clop
+#
+# experiment definition
+#
+
+# Name (used for .log and .dat files)
+Name MyTuning
+
+# Script for running a game. See DummyScript.py for details.
+Script python C:/Users/timon/Documents/Programmieren/C#/Chess-Challenge/chessScript.02/clop-cutechess-cli.py
+
+# Parameter(s) to be optimized
+# <parameter_type> <name> <min> <max>
+# <parameter_type> may be:
+#  LinearParameter
+#  IntegerParameter
+#  GammaParameter
+#  IntegerGammaParameter
+# For GammaParameter, quadratic regression is performed on log(x)
+# Warning: 123 and not 123.0 should be used for IntegerParameter
+IntegerParameter FP 126 155
+IntegerParameter RFP 66 81
+IntegerParameter SEC 0 2
+IntegerParameter SEP 0 2
+IntegerParameter HTL 11 14
+IntegerParameter AWW 54 66
+IntegerParameter AWS 22 27
+IntegerParameter STL 2 4
+
+# This could be the list of machine names in a distributed experiment.
+# In order to run 4 games in parallel, 2 on machine1, 2 on machine2: 
+Processor machine1
+Processor machine1
+Processor machine1
+Processor machine1
+Processor machine1
+Processor machine1
+Processor machine1
+Processor machine1
+Processor machine1
+Processor machine1
+Processor machine1
+Processor machine1
+
+# Call the script "Replications" times in a row with identical parameter values
+# Replications may be used to alternate colors, for instance.
+# Seed % Replications would indicate color.
+Replications 2
+
+# Parameters of statistical model of outcome
+# For binary outcome (Win/Loss, no draws), use "DrawElo 0"
+# For chess, use "DrawElo 100"
+DrawElo 100
+
+# Regression parameters
+# H 3 is recommended (it is the default value)
+# Correlations may be "all" (default) or "none"
+# Even if variables are not correlated "all" should work well. The problem is
+# that the regression might become very costly if the number of variables is
+# high. So use "Correlations none" only if you are certain parameters are
+# independent or you have so many variables that "all" is too costly.
+H 3
+Correlations all
