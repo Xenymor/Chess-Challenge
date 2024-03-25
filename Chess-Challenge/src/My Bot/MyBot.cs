@@ -21,17 +21,17 @@ public class MyBot : IChessBot
         int Evaluate()
         {
             int middleGame = 0, endGame = 0, phase = 0;
-            bool stm = true;
+            bool stm = false;
             do
             {
                 for (var p = PieceType.Pawn; p <= PieceType.King; p++)
                 {
-                    int piece = (int)p, ind;
+                    int piece = (int)p;
                     ulong mask = board.GetPieceBitboard(p, stm);
                     while (mask != 0)
                     {
                         phase += piecePhase[piece];
-                        int square = BitboardHelper.ClearAndGetIndexOfLSB(ref mask);
+                        int square = BitboardHelper.ClearAndGetIndexOfLSB(ref mask),
                         ind = ((piece - 1) << 7) + square ^ (stm ? 56 : 0);
 
                         //Piece Square Values
@@ -42,8 +42,8 @@ public class MyBot : IChessBot
                 middleGame = -middleGame;
                 endGame = -endGame;
                 stm = !stm;
-            } while (!stm);
-            return (middleGame * phase + endGame * (24 - phase)) / (board.IsWhiteToMove ? 24 : -24);
+            } while (stm);
+            return (middleGame * phase + endGame * (24 - phase)) / (board.IsWhiteToMove ? -24 : 24);
         }
 
         int searchDepth = 0;
