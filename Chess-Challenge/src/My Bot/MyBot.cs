@@ -32,7 +32,8 @@ public class MyBot : IChessBot
         if (!isFirstCall)
             if (board.IsDraw() || board.IsInCheckmate())
                 return Evaluate();
-        Move[] moves = board.GetLegalMoves(depth <= 0);
+        Span<Move> moves = stackalloc Move[200];
+        board.GetLegalMovesNonAlloc(ref moves, depth <= 0);
         if (moves.Length == 0)
             return Evaluate();
         Move bestMove = Move.NullMove;
@@ -43,11 +44,10 @@ public class MyBot : IChessBot
             if (bestScore >= beta) return bestScore;
             alpha = Math.Max(alpha, bestScore);
         }
-        for (byte i = 0; i < moves.Length; i++)
+        foreach (Move move in moves)
         {
             if (timer.MillisecondsElapsedThisTurn > searchMaxTime)
                 return 100_000;
-            Move move = moves[i];
             board.MakeMove(move);
             int score = -AlphaBeta(-beta, -alpha, depth - 1, false);
             board.UndoMove(move);
@@ -56,12 +56,9 @@ public class MyBot : IChessBot
                 bestScore = score;
                 alpha = Math.Max(score, alpha);
                 bestMove = move;
-                if (alpha == 100_000)
-                {
+                if (alpha == 100_000) {
                     if (isFirstCall)
-                    {
                         bestRootMove = bestMove;
-                    }
                     return score;
                 }
                 if (score >= beta)
