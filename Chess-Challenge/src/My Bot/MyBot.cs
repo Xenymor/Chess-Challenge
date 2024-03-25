@@ -51,10 +51,6 @@ public class MyBot : IChessBot
             board.MakeMove(move);
             int score = -AlphaBeta(-beta, -alpha, depth - 1, false);
             board.UndoMove(move);
-            if (score >= beta)
-            {
-                return beta;
-            }
             if (score > bestScore)
             {
                 bestScore = score;
@@ -68,6 +64,8 @@ public class MyBot : IChessBot
                     }
                     return score;
                 }
+                if (score >= beta)
+                    break;
             }
         }
         if (isFirstCall)
@@ -85,17 +83,12 @@ public class MyBot : IChessBot
     public int Evaluate()
     {
         if (board.IsInCheckmate())
-        {
             return -100_000;
-        }
         if (board.IsDraw())
-        {
             return 0;
-        }
         int mg = 0;
-
-        foreach (bool stm in new[] { true, false })
-        {
+        bool stm = true;
+        do {
             for (var p = PieceType.Pawn; p <= PieceType.King; p++)
             {
                 int piece = (int)p, ind;
@@ -106,9 +99,9 @@ public class MyBot : IChessBot
                     mg += getPstVal(ind) + pieceVal[piece];
                 }
             }
-
+            stm = !stm;
             mg = -mg;
-        }
+        } while (!stm);
 
         return (board.IsWhiteToMove ? 1 : -1) * mg;
     }
