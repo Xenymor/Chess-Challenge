@@ -6,42 +6,71 @@ public class MyBot : IChessBot
 {
     Move bestRootMove;
 
-    public int getPstVal(int psq)
-    {
-        return (int)(((psts[psq / 10] >> (6 * (psq % 10))) & 63) - 20) * 8;
-    }
+    // Due to the rules of the challenge and how token counting works, evaluation constants are packed into C# decimals,
+    // as they allow the most efficient (12 usable bits per token).
+    // The ordering is as follows: Midgame term 1, endgame term 1, midgame, term 2, endgame term 2...
+    static sbyte[] extracted = new[] { 4835740172228143389605888m, 1862983114964290202813595648m, 6529489037797228073584297991m, 6818450810788061916507740187m, 7154536855449028663353021722m, 14899014974757699833696556826m, 25468819436707891759039590695m, 29180306561342183501734565961m, 944189991765834239743752701m, 4194697739m, 4340114601700738076711583744m, 3410436627687897068963695623m, 11182743911298765866015857947m, 10873240011723255639678263585m, 17684436730682332602697851426m, 17374951722591802467805509926m, 31068658689795177567161113954m, 1534136309681498319279645285m, 18014679997410182140m, 1208741569195510172352512m, 13789093343132567021105512448m, 6502873946609222871099113472m, 1250m }.SelectMany(x => decimal.GetBits(x).Take(3).SelectMany(y => (sbyte[])(Array)BitConverter.GetBytes(y))).ToArray();
 
-    int[] pieceVal = { 0, 100, 310, 330, 500, 1000, 10000 };
-    int[] piecePhase = { 0, 0, 1, 1, 2, 4, 0 };
-    ulong[] psts = { 657614902731556116, 420894446315227099, 384592972471695068, 312245244820264086, 364876803783607569, 366006824779723922, 366006826859316500, 786039115310605588, 421220596516513823, 366011295806342421, 366006826859316436, 366006896669578452, 162218943720801556, 440575073001255824, 657087419459913430, 402634039558223453, 347425219986941203, 365698755348489557, 311382605788951956, 147850316371514514, 329107007234708689, 402598430990222677, 402611905376114006, 329415149680141460, 257053881053295759, 291134268204721362, 492947507967247313, 367159395376767958, 384021229732455700, 384307098409076181, 402035762391246293, 328847661003244824, 365712019230110867, 366002427738801364, 384307168185238804, 347996828560606484, 329692156834174227, 365439338182165780, 386018218798040211, 456959123538409047, 347157285952386452, 365711880701965780, 365997890021704981, 221896035722130452, 384289231362147538, 384307167128540502, 366006826859320596, 366006826876093716, 366002360093332756, 366006824694793492, 347992428333053139, 457508666683233428, 329723156783776785, 329401687190893908, 366002356855326100, 366288301819245844, 329978030930875600, 420621693221156179, 422042614449657239, 384602117564867863, 419505151144195476, 366274972473194070, 329406075454444949, 275354286769374224, 366855645423297932, 329991151972070674, 311105941360174354, 256772197720318995, 365993560693875923, 258219435335676691, 383730812414424149, 384601907111998612, 401758895947998613, 420612834953622999, 402607438610388375, 329978099633296596, 67159620133902 };
+    // After extracting the raw mindgame/endgame terms, we repack it into integers of midgame/endgame pairs.
+    // The scheme in bytes (assuming little endian) is: 00 EG 00 MG
+    // The idea of this is that we can do operations on both midgame and endgame values simultaneously, preventing the need
+    // for evaluation for separate mid-game / end-game terms.
+    int[] evalValues = Enumerable.Range(0, 138).Select(i => extracted[i * 2] | extracted[i * 2 + 1] << 16).ToArray();
 
     public Move Think(Board board, Timer timer)
     {
         int Evaluate()
         {
-            int middleGame = 0, endGame = 0, phase = 0;
-            bool stm = false;
-            do
+            int score = 0, phase = 0;
+            foreach (bool isWhite in new[] { !board.IsWhiteToMove, board.IsWhiteToMove })
             {
-                for (var p = 1; p <= 6; p++)
-                {
-                    ulong mask = board.GetPieceBitboard((PieceType)p, stm);
-                    while (mask != 0)
-                    {
-                        phase += piecePhase[p];
-                        int square = BitboardHelper.ClearAndGetIndexOfLSB(ref mask),
-                        ind = ((p - 1) << 7) + square ^ (stm ? 56 : 0);
+                score = -score;
 
-                        //Piece Square Values
-                        middleGame += getPstVal(ind) + pieceVal[p];
-                        endGame += getPstVal(ind + 64) + pieceVal[p];
+                //       None (skipped)               King
+                for (var pieceIndex = 0; ++pieceIndex <= 6;)
+                {
+                    var bitboard = board.GetPieceBitboard((PieceType)pieceIndex, isWhite);
+
+                    // This and the following line is an efficient way to loop over each piece of a certain type.
+                    // Instead of looping each square, we can skip empty squares by looking at a bitboard of each piece,
+                    // and incrementally removing squares from it. More information: https://www.chessprogramming.org/Bitboards
+                    while (bitboard != 0)
+                    {
+                        var sq = BitboardHelper.ClearAndGetIndexOfLSB(ref bitboard);
+
+                        // Flip square if black.
+                        // This is needed for piece square tables (PSTs), because they are always written from the side that is playing.
+                        if (!isWhite) sq ^= 56;
+
+                        // We count the phase of the current position.
+                        // The phase represents how much we are into the end-game in a gradual way. 24 = all pieces on the board, 0 = only pawns/kings left.
+                        // This is a core principle of tapered evaluation. We increment phase for each piece for both sides based on it's importance:
+                        // None: 0 (obviously)
+                        // Pawn: 0
+                        // Knight: 1
+                        // Bishop: 1
+                        // Rook: 2
+                        // Queen: 4
+                        // King: 0 (because checkmate and stalemate has it's own special rules late on)
+                        // These values are encoded in the decimals mentioned before and aren't explicit in the engine's code.
+                        phase += evalValues[pieceIndex];
+
+                        // Material and PSTs
+                        // PST mean "piece-square tables", it is naturally better for a piece to be on a specific square.
+                        // More: https://www.chessprogramming.org/Piece-Square_Tables
+                        // In this engine, in order to save tokens, the concept of "material" has been removed.
+                        // Instead, each square for each piece has a higher value adjusted to the type of piece that occupies it.
+                        // In order to fit in 1 byte per row/column, the value of each row/column has been divided by 8,
+                        // and here multiplied by 8 (<< 3 is equivalent but ends up 1 token smaller).
+                        // Additionally, each column/row, or file/rank is evaluated, as opposed to every square individually,
+                        // which is only ~20 ELO weaker compared to full PSTs and saves a lot of tokens.
+                        score += evalValues[pieceIndex * 8 + sq / 8]
+                               + evalValues[56 + pieceIndex * 8 + sq % 8]
+                               << 3;
                     }
                 }
-                middleGame = -middleGame;
-                endGame = -endGame;
-                stm = !stm;
-            } while (stm);
-            return (middleGame * phase + endGame * (24 - phase)) / (board.IsWhiteToMove ? -24 : 24);
+            }
+            return score;
         }
 
         int searchDepth = 0;
