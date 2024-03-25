@@ -17,26 +17,24 @@ public class MyBot : IChessBot
 
     public Move Think(Board board, Timer timer)
     {
-
         int Evaluate()
         {
             int middleGame = 0, endGame = 0, phase = 0;
             bool stm = false;
             do
             {
-                for (var p = PieceType.Pawn; p <= PieceType.King; p++)
+                for (var p = 1; p <= 6; p++)
                 {
-                    int piece = (int)p;
-                    ulong mask = board.GetPieceBitboard(p, stm);
+                    ulong mask = board.GetPieceBitboard((PieceType)p, stm);
                     while (mask != 0)
                     {
-                        phase += piecePhase[piece];
+                        phase += piecePhase[p];
                         int square = BitboardHelper.ClearAndGetIndexOfLSB(ref mask),
-                        ind = ((piece - 1) << 7) + square ^ (stm ? 56 : 0);
+                        ind = ((p - 1) << 7) + square ^ (stm ? 56 : 0);
 
                         //Piece Square Values
-                        middleGame += getPstVal(ind) + pieceVal[piece];
-                        endGame += getPstVal(ind + 64) + pieceVal[piece];
+                        middleGame += getPstVal(ind) + pieceVal[p];
+                        endGame += getPstVal(ind + 64) + pieceVal[p];
                     }
                 }
                 middleGame = -middleGame;
