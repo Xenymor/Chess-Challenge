@@ -4,7 +4,6 @@ using System;
 public class MyBot : IChessBot
 {
     Board board;
-    int depth = 40;
     int[] pieceVal = { 0, 100, 310, 330, 500, 1000, 10000 };
     Move bestRootMove;
     int searchMaxTime;
@@ -15,9 +14,9 @@ public class MyBot : IChessBot
         board = b;
         timer = t;
         searchMaxTime = timer.MillisecondsRemaining / 13;
-        for (int i = 0; i < depth; i++)
+        for (int i = 0; ; i++)
         {
-            AlphaBeta(int.MinValue + 1, int.MaxValue, i, true);
+            AlphaBeta(-500_000, 500_000, i, true);
             if (timer.MillisecondsElapsedThisTurn >= searchMaxTime / 3)
                 break;
         }
