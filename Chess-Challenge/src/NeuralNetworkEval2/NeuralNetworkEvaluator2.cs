@@ -1,8 +1,4 @@
-﻿using ChessChallenge.API;
-using System.IO;
-using System.Text.Json;
-
-namespace NeuralNetworkEval
+﻿namespace NeuralNetworkEval
 {
     /*
     public class NeuralNetworkEvaluator2

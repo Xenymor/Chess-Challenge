@@ -1,7 +1,4 @@
 ﻿using ChessChallenge.Application;
-using Newtonsoft.Json;
-using System;
-using System.IO;
 
 namespace Chess_Challenge.src.NeuralNetworkEval2
 {

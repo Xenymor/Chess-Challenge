@@ -1,8 +1,7 @@
-﻿using System.Linq;
-using System;
-using System.Diagnostics;
+﻿using System;
 using System.Collections.Generic;
-using System.Threading;
+using System.Diagnostics;
+using System.Linq;
 
 namespace SPSA_Tuning
 {
@@ -10,7 +9,7 @@ namespace SPSA_Tuning
     class SPSAAlgorithm
     {   // Set your initial parameter values
         static double[] parameters = { 310, 330, 500, 1000, 15, 30, 23, 60, 13, 10, 141, 74, 1, 1, 13, 60, 25, 3 };
-        static List<string> paramNames = new List<string>(new string[] { "NV", "BV", "RV", "QV", "DPM", "DPE", "BPM", "BPE", "OFM", "OFE", "FP", "RFP", "SEC", "SEP", "HTL", "AWW", "AWS", "STL"});
+        static List<string> paramNames = new List<string>(new string[] { "NV", "BV", "RV", "QV", "DPM", "DPE", "BPM", "BPE", "OFM", "OFE", "FP", "RFP", "SEC", "SEP", "HTL", "AWW", "AWS", "STL" });
 
         // Set your cutechess-cli command
         static int gameCount = 2;
@@ -25,7 +24,7 @@ namespace SPSA_Tuning
 
         static void Main()
         {
-            
+
 
             // Run SPSA
             for (int i = 0; i < iterations; i++)
@@ -68,8 +67,8 @@ namespace SPSA_Tuning
             // Set parameters
             for (int i = 0; i < parameters.Length; i++)
             {
-                initString1 += $" initstr=\"setvalue {paramNames[i]} {(int) parameters[i]}\"";
-                initString2 += $" initstr=\"setvalue {paramNames[i]} {(int) originalParams[i]}\"";
+                initString1 += $" initstr=\"setvalue {paramNames[i]} {(int)parameters[i]}\"";
+                initString2 += $" initstr=\"setvalue {paramNames[i]} {(int)originalParams[i]}\"";
             }
 
             // Run the cutechess-cli command
@@ -123,7 +122,7 @@ namespace SPSA_Tuning
             // Use the 'result' variable as needed
             int v = 1 / (result + gameCount);
             Console.WriteLine(result + "; " + v);
-            return v*v;
+            return v * v;
         }
 
         // Placeholder for your specific improvement calculation

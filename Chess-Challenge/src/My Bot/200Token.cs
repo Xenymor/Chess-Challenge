@@ -1,9 +1,6 @@
 ﻿using ChessChallenge.API;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 public class TwoHundred : IChessBot
 {
@@ -18,7 +15,7 @@ public class TwoHundred : IChessBot
             // Quiescence & eval
             if (depth <= 0)
                 alpha = Math.Max(alpha, material * 200 + board.GetLegalMoves().Length);  //eval = material + mobility
-                                                                                            // no beta cutoff check here, it will be done latter
+                                                                                         // no beta cutoff check here, it will be done latter
 
 
             foreach (Move move in board.GetLegalMoves(depth <= 0)

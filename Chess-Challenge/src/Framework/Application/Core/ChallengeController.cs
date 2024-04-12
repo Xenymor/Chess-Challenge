@@ -1,5 +1,4 @@
 ﻿using Chess_Challenge.src.EvilBot;
-using Chess_Challenge.src.EvilBot6_9;
 using Chess_Challenge.src.Tier2;
 using ChessChallenge.Chess;
 using Raylib_cs;

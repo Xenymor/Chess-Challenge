@@ -105,7 +105,8 @@ public class EvilBot6_9_2 : IChessBot
         return (middleGame * phase + endGame * (24 - phase) + 384) / (board.IsWhiteToMove ? 24 : -24); // 384 = 16 * 24
     }
 
-    public int AlphaBeta(int alpha, int beta, int depth, int ply, bool allowNull) {
+    public int AlphaBeta(int alpha, int beta, int depth, int ply, bool allowNull)
+    {
 #if DEBUG
         nodeCounter++;
 #endif

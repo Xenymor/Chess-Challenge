@@ -73,14 +73,14 @@ public class MyBot : IChessBot
             return score;
         }
 
-        int searchDepth = 1;
+        var searchDepth = 1;
 
         int Search(int depth, int alpha, int beta)
         {
             // Quiescence & eval
             if (depth <= 0)
                 alpha = Math.Max(alpha, Evaluate());  //eval = material + mobility
-                                                                                         // no beta cutoff check here, it will be done latter
+                                                      // no beta cutoff check here, it will be done later
 
             foreach (Move move in board.GetLegalMoves(depth <= 0)
                 .OrderByDescending(move => (move == bestRootMove ? 1 : 0, move.CapturePieceType, 0 - move.MovePieceType)))
