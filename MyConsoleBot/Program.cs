@@ -5,7 +5,7 @@ static class Program
     static int[] parameters;
     public static void Main()
     {
-        IChessBot bot = new MyBot(true);
+        IChessBot bot = new MyBot();
         Type botType = bot.GetType();
         ChessChallenge.Chess.Board tempBoard = new ChessChallenge.Chess.Board();
         tempBoard.LoadStartPosition();
@@ -73,7 +73,7 @@ static class Program
                     break;
 
                 case "ucinewgame":
-                    bot = (IChessBot)botType.GetConstructor(new Type[] { true.GetType() }).Invoke(new object[] { isTuning });
+                    bot = (IChessBot)botType.GetConstructor(new Type[] { }).Invoke(new object[] { });
                     tempBoard = new ChessChallenge.Chess.Board();
                     tempBoard.LoadStartPosition();
                     board = new Board(tempBoard);
@@ -126,9 +126,9 @@ static class Program
                     string bestMoveString;
                     if (isTuning)
                         if (depth == 0)
-                            bestMoveString = ((MyBot)bot).Think(board, new ChessChallenge.API.Timer(board.IsWhiteToMove ? wtime : btime), parameters).ToString();
+                            bestMoveString = ((MyBot)bot).Think(board, new ChessChallenge.API.Timer(board.IsWhiteToMove ? wtime : btime)).ToString();
                         else
-                            bestMoveString = ((MyBot)bot).Think(board, new ChessChallenge.API.Timer(board.IsWhiteToMove ? wtime : btime), parameters, depth).ToString();
+                            bestMoveString = ((MyBot)bot).Think(board, new ChessChallenge.API.Timer(board.IsWhiteToMove ? wtime : btime)).ToString();
                     else
                         bestMoveString = bot.Think(board, new ChessChallenge.API.Timer(board.IsWhiteToMove ? wtime : btime)).ToString();
                     string bestMoveFormattedString = bestMoveString.Substring(7, bestMoveString.Length - 8);

@@ -1,11 +1,10 @@
 ﻿using ChessChallenge.API;
 
-
 static class Program
 {
     public static void Main()
     {
-        IChessBot bot = new EvilBot6_9_8();
+        IChessBot bot = new TwoHundred();
         Type botType = bot.GetType();
         ChessChallenge.Chess.Board tempBoard = new ChessChallenge.Chess.Board();
         tempBoard.LoadStartPosition();

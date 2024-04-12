@@ -73,11 +73,10 @@ public class MyBot : IChessBot
             return score;
         }
 
-        int searchDepth = 0;
+        int searchDepth = 1;
 
         int Search(int depth, int alpha, int beta)
         {
-
             // Quiescence & eval
             if (depth <= 0)
                 alpha = Math.Max(alpha, Evaluate());  //eval = material + mobility
@@ -93,7 +92,7 @@ public class MyBot : IChessBot
 
                 int score =
                     board.IsDraw() ? 0 :
-                    board.IsInCheckmate() ? 30000 :
+                    board.IsInCheckmate() ? 1_999_999_999 :
                     -Search(depth - 1, -beta, -alpha);
 
                 if (score > alpha)
@@ -116,7 +115,9 @@ public class MyBot : IChessBot
         try
         {
             for (; ; )
-                Search(++searchDepth, -40000, 40000);
+            {
+                Search(++searchDepth, -2_000_000_000, 2_000_000_000);
+            }
         }
         catch { }
 
