@@ -1,4 +1,5 @@
-﻿using Chess_Challenge.src.EvilBot6_9;
+﻿using Chess_Challenge.src.EvilBot;
+using Chess_Challenge.src.EvilBot6_9;
 using Chess_Challenge.src.Tier2;
 using ChessChallenge.Chess;
 using Raylib_cs;
@@ -218,7 +219,7 @@ namespace ChessChallenge.Application
                 PlayerType.MyBot => new ChessPlayer(new MyBot(), type, GameDurationMilliseconds),
                 PlayerType.MyBotNN => new ChessPlayer(new MyBotNeuralNetwork(), type, GameDurationMilliseconds),
                 PlayerType.MyBotNN2 => new ChessPlayer(new MyBotNeuralNetwork2(), type, GameDurationMilliseconds),
-                PlayerType.EvilBot => new ChessPlayer(new TwoHundred(), type, GameDurationMilliseconds),
+                PlayerType.EvilBot => new ChessPlayer(new _400EvilBot(), type, GameDurationMilliseconds),
                 PlayerType.Tier2 => new ChessPlayer(new Tier2(), type, GameDurationMilliseconds),
                 PlayerType.EvilBot2 => new ChessPlayer(new EvilBot2_2.EvilBot(), type, GameDurationMilliseconds),
                 PlayerType.EvilBot2_0 => new ChessPlayer(new EvilBot2_0.EvilBot2(), type, GameDurationMilliseconds),
