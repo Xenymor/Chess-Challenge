@@ -75,14 +75,14 @@ namespace Chess_Challenge.src.EvilBot
                 return score;
             }
 
-            int searchDepth = 1;
+            var searchDepth = 1;
 
             int Search(int depth, int alpha, int beta)
             {
                 // Quiescence & eval
                 if (depth <= 0)
                     alpha = Math.Max(alpha, Evaluate());  //eval = material + mobility
-                                                          // no beta cutoff check here, it will be done latter
+                                                          // no beta cutoff check here, it will be done later
 
                 foreach (Move move in board.GetLegalMoves(depth <= 0)
                     .OrderByDescending(move => (move == bestRootMove ? 1 : 0, move.CapturePieceType, 0 - move.MovePieceType)))
@@ -105,7 +105,7 @@ namespace Chess_Challenge.src.EvilBot
                     }
 
                     // Check timer now: after updating best root move (so no illegal move), but before UndoMove (which takes some time)
-                    if (timer.MillisecondsElapsedThisTurn * 30 >= timer.MillisecondsRemaining)
+                    if (timer.MillisecondsElapsedThisTurn * 25 >= timer.MillisecondsRemaining)
                         depth /= 0;
 
                     board.UndoMove(move);
