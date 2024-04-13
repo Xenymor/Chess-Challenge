@@ -103,7 +103,7 @@ public class MyBot : IChessBot
                 }
 
                 // Check timer now: after updating best root move (so no illegal move), but before UndoMove (which takes some time)
-                if (timer.MillisecondsElapsedThisTurn * 30 >= timer.MillisecondsRemaining)
+                if (timer.MillisecondsElapsedThisTurn * 25 >= timer.MillisecondsRemaining)
                     depth /= 0;
 
                 board.UndoMove(move);
