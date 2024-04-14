@@ -21,68 +21,65 @@ namespace Chess_Challenge.src.EvilBot
 
         public Move Think(Board board, Timer timer)
         {
-            int Evaluate()
-            {
-                int score = 0, phase = 0;
-                foreach (bool isWhite in new[] { !board.IsWhiteToMove, board.IsWhiteToMove })
-                {
-                    score = -score;
-
-                    //       None (skipped)               King
-                    for (var pieceIndex = 0; ++pieceIndex <= 6;)
-                    {
-                        var bitboard = board.GetPieceBitboard((PieceType)pieceIndex, isWhite);
-
-                        // This and the following line is an efficient way to loop over each piece of a certain type.
-                        // Instead of looping each square, we can skip empty squares by looking at a bitboard of each piece,
-                        // and incrementally removing squares from it. More information: https://www.chessprogramming.org/Bitboards
-                        while (bitboard != 0)
-                        {
-                            var sq = BitboardHelper.ClearAndGetIndexOfLSB(ref bitboard);
-
-                            // Flip square if black.
-                            // This is needed for piece square tables (PSTs), because they are always written from the side that is playing.
-                            if (!isWhite) sq ^= 56;
-
-                            // We count the phase of the current position.
-                            // The phase represents how much we are into the end-game in a gradual way. 24 = all pieces on the board, 0 = only pawns/kings left.
-                            // This is a core principle of tapered evaluation. We increment phase for each piece for both sides based on it's importance:
-                            // None: 0 (obviously)
-                            // Pawn: 0
-                            // Knight: 1
-                            // Bishop: 1
-                            // Rook: 2
-                            // Queen: 4
-                            // King: 0 (because checkmate and stalemate has it's own special rules late on)
-                            // These values are encoded in the decimals mentioned before and aren't explicit in the engine's code.
-                            phase += evalValues[pieceIndex];
-
-                            // Material and PSTs
-                            // PST mean "piece-square tables", it is naturally better for a piece to be on a specific square.
-                            // More: https://www.chessprogramming.org/Piece-Square_Tables
-                            // In this engine, in order to save tokens, the concept of "material" has been removed.
-                            // Instead, each square for each piece has a higher value adjusted to the type of piece that occupies it.
-                            // In order to fit in 1 byte per row/column, the value of each row/column has been divided by 8,
-                            // and here multiplied by 8 (<< 3 is equivalent but ends up 1 token smaller).
-                            // Additionally, each column/row, or file/rank is evaluated, as opposed to every square individually,
-                            // which is only ~20 ELO weaker compared to full PSTs and saves a lot of tokens.
-                            score += evalValues[pieceIndex * 8 + sq / 8]
-                                   + evalValues[56 + pieceIndex * 8 + sq % 8]
-                                   << 3;
-                        }
-                    }
-                }
-                return score;
-            }
-
-            var searchDepth = 1;
+            int searchDepth = 1;
 
             int Search(int depth, int alpha, int beta)
             {
                 // Quiescence & eval
+                int score = 0, phase = 0;
                 if (depth <= 0)
-                    alpha = Math.Max(alpha, Evaluate());  //eval = material + mobility
-                                                          // no beta cutoff check here, it will be done later
+                {
+                    foreach (bool isWhite in new[] { !board.IsWhiteToMove, board.IsWhiteToMove })
+                    {
+                        score = -score;
+
+                        //       None (skipped)               King
+                        for (var pieceIndex = 0; ++pieceIndex <= 6;)
+                        {
+                            var bitboard = board.GetPieceBitboard((PieceType)pieceIndex, isWhite);
+
+                            // This and the following line is an efficient way to loop over each piece of a certain type.
+                            // Instead of looping each square, we can skip empty squares by looking at a bitboard of each piece,
+                            // and incrementally removing squares from it. More information: https://www.chessprogramming.org/Bitboards
+                            while (bitboard != 0)
+                            {
+                                var sq = BitboardHelper.ClearAndGetIndexOfLSB(ref bitboard);
+
+                                // Flip square if black.
+                                // This is needed for piece square tables (PSTs), because they are always written from the side that is playing.
+                                if (!isWhite) sq ^= 56;
+
+                                // We count the phase of the current position.
+                                // The phase represents how much we are into the end-game in a gradual way. 24 = all pieces on the board, 0 = only pawns/kings left.
+                                // This is a core principle of tapered evaluation. We increment phase for each piece for both sides based on it's importance:
+                                // None: 0 (obviously)
+                                // Pawn: 0
+                                // Knight: 1
+                                // Bishop: 1
+                                // Rook: 2
+                                // Queen: 4
+                                // King: 0 (because checkmate and stalemate has it's own special rules late on)
+                                // These values are encoded in the decimals mentioned before and aren't explicit in the engine's code.
+                                phase += evalValues[pieceIndex];
+
+                                // Material and PSTs
+                                // PST mean "piece-square tables", it is naturally better for a piece to be on a specific square.
+                                // More: https://www.chessprogramming.org/Piece-Square_Tables
+                                // In this engine, in order to save tokens, the concept of "material" has been removed.
+                                // Instead, each square for each piece has a higher value adjusted to the type of piece that occupies it.
+                                // In order to fit in 1 byte per row/column, the value of each row/column has been divided by 8,
+                                // and here multiplied by 8 (<< 3 is equivalent but ends up 1 token smaller).
+                                // Additionally, each column/row, or file/rank is evaluated, as opposed to every square individually,
+                                // which is only ~20 ELO weaker compared to full PSTs and saves a lot of tokens.
+                                score += evalValues[pieceIndex * 8 + sq / 8]
+                                       + evalValues[56 + pieceIndex * 8 + sq % 8]
+                                       << 3;
+                            }
+                        }
+                    }
+                    alpha = Math.Max(alpha, score);  //eval = material + mobility
+                }
+                // no beta cutoff check here, it will be done later
 
                 foreach (Move move in board.GetLegalMoves(depth <= 0)
                     .OrderByDescending(move => (move == bestRootMove ? 1 : 0, move.CapturePieceType, 0 - move.MovePieceType)))
@@ -91,11 +88,11 @@ namespace Chess_Challenge.src.EvilBot
                         break;
 
                     board.MakeMove(move);
-
-                    int score =
+                    int S(int newAlpha) => score = -Search(depth - 1, -newAlpha, -alpha);
+                    score =
                         board.IsDraw() ? 0 :
                         board.IsInCheckmate() ? 1_999_999_999 :
-                        -Search(depth - 1, -beta, -alpha);
+                        alpha < S(alpha + 1) ? S(beta) : score;
 
                     if (score > alpha)
                     {
