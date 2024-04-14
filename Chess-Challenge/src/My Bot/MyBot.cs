@@ -86,11 +86,11 @@ public class MyBot : IChessBot
                     break;
 
                 board.MakeMove(move);
-
+                int S(int newAlpha) => score = -Search(depth - 1, -newAlpha, -alpha);
                 score =
                     board.IsDraw() ? 0 :
                     board.IsInCheckmate() ? 1_999_999_999 :
-                    -Search(depth - 1, -beta, -alpha);
+                    alpha < S(alpha+1) ? S(beta) : score;
 
                 if (score > alpha)
                 {
