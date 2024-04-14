@@ -24,9 +24,9 @@ public class MyBot : IChessBot
         int Search(int depth, int alpha, int beta)
         {
             // Quiescence & eval
+            int score = 0, phase = 0;
             if (depth <= 0)
             {
-                int score = 0, phase = 0;
                 foreach (bool isWhite in new[] { !board.IsWhiteToMove, board.IsWhiteToMove })
                 {
                     score = -score;
@@ -75,7 +75,6 @@ public class MyBot : IChessBot
                         }
                     }
                 }
-
                 alpha = Math.Max(alpha, score);  //eval = material + mobility
             }
                                                       // no beta cutoff check here, it will be done later
@@ -88,7 +87,7 @@ public class MyBot : IChessBot
 
                 board.MakeMove(move);
 
-                int score =
+                score =
                     board.IsDraw() ? 0 :
                     board.IsInCheckmate() ? 1_999_999_999 :
                     -Search(depth - 1, -beta, -alpha);
