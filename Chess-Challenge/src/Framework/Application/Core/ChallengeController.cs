@@ -220,7 +220,7 @@ namespace ChessChallenge.Application
                 PlayerType.MyBotNN2 => new ChessPlayer(new MyBotNeuralNetwork2(), type, GameDurationMilliseconds),
                 PlayerType.EvilBot => new ChessPlayer(new _400EvilBot(), type, GameDurationMilliseconds),
                 PlayerType.Tier2 => new ChessPlayer(new Tier2(), type, GameDurationMilliseconds),
-                PlayerType.EvilBot2 => new ChessPlayer(new EvilBot2_2.EvilBot(), type, GameDurationMilliseconds),
+                PlayerType.EvilBot2 => new ChessPlayer(new TwoHundred(), type, GameDurationMilliseconds),
                 PlayerType.EvilBot2_0 => new ChessPlayer(new EvilBot2_0.EvilBot2(), type, GameDurationMilliseconds),
                 _ => new ChessPlayer(new HumanPlayer(boardUI), type)
             };
