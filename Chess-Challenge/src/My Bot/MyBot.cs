@@ -4,7 +4,7 @@ using System.Linq;
 
 public class MyBot : IChessBot
 {
-    //This bot is a combination of ErwanF's Nano and the evaluation of Smol. I simplified the evaluation quite a bit to only include the PSTS.
+    //This bot is a combination of ErwanF's Nano and the evaluation of Smol. I simplified the evaluation quite a bit to only include the PSV.
     //After that I optimized the tokens further and added PVS.
     Move bestRootMove;
 
