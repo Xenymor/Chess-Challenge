@@ -55,7 +55,7 @@ static class Program
                     }
                     else if (tokens.Length >= 2)
                     {
-                        board.board.LoadPosition(tokens[1]);
+                        board.board.LoadPosition(command.Replace("position ", "").Replace("\"", ""));
                     }
                     break;
 
