@@ -53,7 +53,10 @@ static class Program
                             }
                         }
                     }
-                    // Handle other position setup options if needed
+                    else if (tokens.Length >= 2)
+                    {
+                        board.board.LoadPosition(tokens[1]);
+                    }
                     break;
 
                 case "go":
@@ -69,6 +72,8 @@ static class Program
                             btime = int.Parse(tokens[i + 1]);
                         else if (tokens[i] == "time")
                             time = int.Parse(tokens[i + 1]);
+                        else if (tokens[i] == "movetime")
+                            time = int.Parse(tokens[i + 1]) * 12;
 
                     }
 

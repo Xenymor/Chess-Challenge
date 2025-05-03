@@ -99,9 +99,11 @@ static class Program
                                 board.MakeMove(new Move(tokens[i], board));
                             }
                         }
+                    } else if (tokens.Length >= 2)
+                    {
+                        board.board.LoadPosition(tokens[1]);
                     }
-                    // Handle other position setup options if needed
-                    break;
+                        break;
 
                 case "go":
                     // Parse time controls and other parameters
