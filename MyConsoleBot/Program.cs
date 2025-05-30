@@ -5,13 +5,13 @@ static class Program
     static int[] parameters;
     public static void Main()
     {
-        IChessBot bot = new MyBot(true);
+        IChessBot bot = new MyBot();
         Type botType = bot.GetType();
         ChessChallenge.Chess.Board tempBoard = new ChessChallenge.Chess.Board();
         tempBoard.LoadStartPosition();
         Board board = new Board(tempBoard);
-        List<string> parameterNames = new List<string>();
-        bool isTuning = true;
+        bool isTuning = false;
+        /*List<string> parameterNames = new List<string>();
         parameterNames.AddRange(new string[] { "NO", "PV", "NV", "BV", "RV", "QV", "KV", "DPM", "DPE", "BPM", "BPE", "OFM", "OFE", "FP", "RFP", "SEC", "SEP", "HTL", "AWW", "AWS", "STL" });
         parameters = new int[parameterNames.Count];
         for (int i = 0; i < parameters.Length; i++)
@@ -73,7 +73,8 @@ static class Program
                     break;
 
                 case "ucinewgame":
-                    bot = (IChessBot)botType.GetConstructor(new Type[] { true.GetType() }).Invoke(new object[] { isTuning });
+                    //bot = (IChessBot)botType.GetConstructor(new Type[] { true.GetType() }).Invoke(new object[] { isTuning });
+                    bot = (IChessBot)botType.GetConstructor(new Type[0]).Invoke(new object[0]);
                     tempBoard = new ChessChallenge.Chess.Board();
                     tempBoard.LoadStartPosition();
                     board = new Board(tempBoard);
@@ -128,9 +129,9 @@ static class Program
                     string bestMoveString;
                     if (isTuning)
                         if (depth == 0)
-                            bestMoveString = ((MyBot)bot).Think(board, new ChessChallenge.API.Timer(board.IsWhiteToMove ? wtime : btime), parameters).ToString();
+                            bestMoveString = ((MyBot)bot).Think(board, new ChessChallenge.API.Timer(board.IsWhiteToMove ? wtime : btime)/*, parameters*/).ToString();
                         else
-                            bestMoveString = ((MyBot)bot).Think(board, new ChessChallenge.API.Timer(board.IsWhiteToMove ? wtime : btime), parameters, depth).ToString();
+                            bestMoveString = ((MyBot)bot).Think(board, new ChessChallenge.API.Timer(board.IsWhiteToMove ? wtime : btime)/*, parameters, depth*/).ToString();
                     else
                         bestMoveString = bot.Think(board, new ChessChallenge.API.Timer(board.IsWhiteToMove ? wtime : btime)).ToString();
                     string bestMoveFormattedString = bestMoveString.Substring(7, bestMoveString.Length - 8);
@@ -144,7 +145,7 @@ static class Program
                         bot = (IChessBot)botType.GetConstructor(new Type[] { false.GetType() }).Invoke(new object[] { true });
                         isTuning = true;
                     }
-                    parameters[parameterNames.IndexOf(tokens[1])] = int.Parse(tokens[2]);
+                    //parameters[parameterNames.IndexOf(tokens[1])] = int.Parse(tokens[2]);
                     break;
 
                 default:
