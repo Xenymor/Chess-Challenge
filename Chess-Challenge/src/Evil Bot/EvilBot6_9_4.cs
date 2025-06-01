@@ -50,7 +50,7 @@ public class EvilBot6_9_4 : IChessBot
 
     public int Evaluate()
     {
-        int middleGame = 0, endGame = 0, phase = 0, kingDist = 0;
+        int middleGame = 0, endGame = 0, phase = 0;
         bool stm = true;
         do
         {

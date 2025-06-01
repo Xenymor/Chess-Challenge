@@ -131,7 +131,15 @@ public class MyBot : IChessBot
             entry.bound == 3
                 || entry.bound == 2 && entry.score >= beta
                 || entry.bound == 1 && entry.score <= alpha
-        )) return entry.score;
+        )) { 
+            board.MakeMove(entry.move);
+            if (!board.IsDraw())
+            {
+                board.UndoMove(entry.move);
+                return entry.score;
+            }
+            board.UndoMove(entry.move);
+        }
 
         int eval = Evaluate();
 
@@ -206,6 +214,7 @@ public class MyBot : IChessBot
 
         if (!qSearch && moveSpan.Length == 0) return inCheck ? -30_000 + ply : 0;
 
+        // 1 = fail low, 2 = fail high, 3 = exact score
         int bound = bestScore >= beta ? 2 : bestScore > origAlpha ? 3 : 1;
 
         if (bound == 2)
@@ -269,8 +278,8 @@ public class MyBot : IChessBot
             + ";\tNodeCount: " + nodeCounter //#DEBUG
             + ";\tkNpS: " + (nodeCounter / (float)timer.MillisecondsElapsedThisTurn) //#DEBUG
             ); //#DEBUG
-        MatchStatsUI.depthSum2 += calculatedDepth; //#DEBUG
-        MatchStatsUI.movesPlayed2++; //#DEBUG
+        MatchStatsUI.depthSum1 += calculatedDepth; //#DEBUG
+        MatchStatsUI.movesPlayed1++; //#DEBUG
 #endif
         return bestRootMove.IsNull ? board.GetLegalMoves()[0] : bestRootMove;
     }
