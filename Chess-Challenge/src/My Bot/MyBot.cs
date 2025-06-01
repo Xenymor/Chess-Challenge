@@ -264,7 +264,7 @@ public class MyBot : IChessBot
             }
         }
 #if DEBUG
-        Console.WriteLine("EvilBot: " + EvalToString(eval / -100f) //#DEBUG
+        Console.WriteLine("MyBot: " + EvalToString(eval / -100f) //#DEBUG
             + ";\tDepth: " + calculatedDepth + (timer.MillisecondsElapsedThisTurn >= searchMaxTime ? "?" : "") //#DEBUG
             + ";\tNodeCount: " + nodeCounter //#DEBUG
             + ";\tkNpS: " + (nodeCounter / (float)timer.MillisecondsElapsedThisTurn) //#DEBUG
